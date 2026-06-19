@@ -1147,26 +1147,42 @@ def realizar_auditoria(arquivo, rubricas_alvo):
 
     Para todo o PDF (não só por página):
       1. Varre as linhas em busca da Competência (MM/AAAA) — é o dado de
-         data mais importante e deve ser lido com precisão de 100%.
-      2. A Competência encontrada vale para todos os lançamentos de rubrica
-         identificados a partir daquele ponto, até que uma nova Competência
-         apareça.
+         data mais importante e deve ser lido com precisão de 100%. A
+         Competência SEMPRE aparece antes da rubrica que ela referencia
+         (primeiro o período, só depois a tabela de rubricas daquele
+         período).
+      2. A Competência encontrada vale SOMENTE para rubricas de interesse
+         encontradas a partir daquele ponto e ATÉ a próxima Competência
+         aparecer — nunca depois disso.
       3. Para cada linha de rubrica reconhecida (RUBRICAS_MESTRE), captura
-         o valor na própria linha (à direita da descrição).
+         o valor na própria linha (à direita da descrição) e associa à
+         Competência guardada.
+
+    REGRA CRÍTICA — uma Competência só é usada se a rubrica de interesse for
+    encontrada ANTES que uma nova Competência apareça. Se uma nova
+    Competência for encontrada e a rubrica de interesse nunca tiver
+    aparecido para a Competência anterior, essa Competência anterior é
+    DESCARTADA (marcada como "usada/expirada") — ela nunca é reaproveitada
+    para uma rubrica que apareça mais adiante, pois essa rubrica pertenceria
+    a outro período ou a outro benefício (NB) do extrato. Isso evita que uma
+    competência sem o lançamento de interesse "vaze" e seja incorretamente
+    associada à rubrica de um bloco diferente.
 
     IMPORTANTE — a Competência PERSISTE entre páginas (não é reiniciada a
-    cada nova página do PDF). Isso é necessário porque o extrato do INSS
-    pode cortar a tabela "Rubrica / Descrição Rubrica / Valor" no fim de
-    uma página quando ela não cabe inteira: a linha da Competência aparece
-    no fim da página 1 (ex: "05/2024 ...") mas sua tabela de rubricas vem
-    vazia ali, e as rubricas daquela mesma Competência aparecem "soltas",
-    sem nenhuma nova linha de Competência antes delas, logo no topo da
-    página 2. Se a Competência fosse reiniciada por página, essas rubricas
-    do topo da página seriam descartadas por falta de data confiável — e é
-    exatamente isso que deve ser evitado.
+    cada nova página do PDF), pois o extrato do INSS pode cortar a tabela
+    "Rubrica / Descrição Rubrica / Valor" no fim de uma página quando ela
+    não cabe inteira: a linha da Competência aparece no fim de uma página,
+    mas sua tabela de rubricas vem vazia ali, e as rubricas daquela mesma
+    Competência aparecem "soltas", sem nenhuma nova linha de Competência
+    antes delas, logo no topo da página seguinte. A persistência entre
+    páginas continua válida; o que muda é que ela expira ao encontrar a
+    PRÓXIMA Competência, e não antes disso.
     """
     resultados = []
-    competencia_atual = None   # persiste entre páginas, propositalmente
+    competencia_atual = None     # competência vigente, aguardando a rubrica
+    competencia_usada = False    # True quando a rubrica já foi encontrada
+                                  # para a competência vigente (ou quando não
+                                  # há competência vigente válida)
 
     with pdfplumber.open(arquivo) as pdf:
         for page in pdf.pages:
@@ -1185,7 +1201,14 @@ def realizar_auditoria(arquivo, rubricas_alvo):
                 # linhas "isoladas".
                 comp_encontrada = _extrair_competencia(texto_up)
                 if comp_encontrada:
+                    # Uma nova Competência foi encontrada: a anterior (se
+                    # ainda não tiver sido usada por uma rubrica) é
+                    # definitivamente descartada agora — ela nunca poderá
+                    # ser reaproveitada por uma rubrica que apareça depois
+                    # deste ponto, pois essa rubrica pertenceria a este novo
+                    # período (ou a outro benefício).
                     competencia_atual = comp_encontrada
+                    competencia_usada = False
                     # Esta linha é a linha da tabela de identificação do
                     # benefício (Competência/Período/Valor Líquido/...), não
                     # uma linha de rubrica — não tentamos detectar rubrica
@@ -1202,11 +1225,11 @@ def realizar_auditoria(arquivo, rubricas_alvo):
                 if not valor_final:
                     continue
 
-                # Sem Competência identificada ainda em nenhuma página
-                # anterior (ou na atual): não é possível selar a data deste
-                # lançamento com confiança — melhor descartar do que
-                # arriscar uma data errada em um relatório de uso jurídico.
-                if not competencia_atual:
+                # Sem Competência vigente válida (nenhuma foi vista ainda,
+                # ou a vigente já foi descartada/usada): não é possível
+                # selar a data deste lançamento com confiança — melhor
+                # descartar do que arriscar uma data errada.
+                if not competencia_atual or competencia_usada:
                     continue
 
                 resultados.append({
@@ -1215,6 +1238,12 @@ def realizar_auditoria(arquivo, rubricas_alvo):
                     "VALOR":     valor_final,
                     "HISTÓRICO": texto_up[:80],
                 })
+
+                # Esta Competência já recebeu sua rubrica de interesse —
+                # não pode ser reaproveitada por outra rubrica encontrada
+                # mais adiante (ex: outra ocorrência de "217" que pertença
+                # a um bloco/benefício diferente).
+                competencia_usada = True
 
     return resultados
 
