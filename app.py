@@ -1,1 +1,1874 @@
+import streamlit as st
+import pdfplumber
+import pandas as pd
+import re
+from datetime import datetime
+import io
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+except ImportError:
+    st.error("Erro: A biblioteca 'openpyxl' não está instalada. Certifique-se de incluir 'openpyxl' no seu arquivo requirements.txt.")
 
+# --- 1. CONFIGURAÇÃO E ESTILO ---
+st.set_page_config(page_title="Edson Medeiros | Consultoria e Compliance", layout="wide", page_icon="⚖️")
+
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=Great+Vibes&display=swap');
+
+/* ═══ VARIÁVEIS ════════════════════════════════════════════════════════════ */
+:root {
+    --p:     #050810;
+    --p2:    #0A0F18;
+    --p3:    #111823;
+    --p4:    #19222F;
+    --g:     #C5A566;
+    --g2:    #D4B87A;
+    --g3:    #A8883E;
+    --c:     #EDE5D4;
+    --cm:    rgba(237,229,212,0.55);
+    --cl:    rgba(237,229,212,0.20);
+    --gl:    rgba(197,165,102,0.15);
+    --gm:    rgba(197,165,102,0.08);
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans:  'Inter', system-ui, sans-serif;
+    --r-sm:  10px;
+    --r-md:  16px;
+    --r-lg:  24px;
+    --r-xl:  32px;
+}
+
+/* ═══ RESET BASE ══════════════════════════════════════════════════════════ */
+html, body, [class*="css"] {
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* ═══ FUNDO EM CAMADAS ════════════════════════════════════════════════════ */
+.stApp {
+    background: var(--p);
+    color: var(--c);
+    /* Camada 1: grade de pontos */
+    background-image:
+        radial-gradient(circle, rgba(197,165,102,0.055) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+/* Camada 2: luz dourada central — injetada via pseudo-elemento no body */
+body::before {
+    content: '';
+    position: fixed;
+    top: -30vh; left: 50%;
+    transform: translateX(-50%);
+    width: 80vw; height: 80vh;
+    background: radial-gradient(ellipse,
+        rgba(197,165,102,0.055) 0%,
+        transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ═══ ANIMAÇÕES ═══════════════════════════════════════════════════════════ */
+@keyframes fadeUp {
+    from { opacity:0; transform:translateY(32px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity:0; }
+    to   { opacity:1; }
+}
+@keyframes shimmerText {
+    0%   { background-position: -500px 0; }
+    100% { background-position: 500px 0; }
+}
+@keyframes pulseRing {
+    0%,100% { opacity:0.25; transform:scale(1); }
+    50%      { opacity:0.7;  transform:scale(1.05); }
+}
+@keyframes glow {
+    0%,100% { opacity:0.3; }
+    50%      { opacity:0.85; }
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes barFill {
+    from { width: 0; }
+    to   { width: var(--bar-w, 60%); }
+}
+@keyframes floatY {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px); }
+}
+@keyframes revealLine {
+    from { scaleX: 0; }
+    to   { scaleX: 1; }
+}
+
+/* ═══ CONTAINER ═══════════════════════════════════════════════════════════ */
+.block-container {
+    max-width: 1100px !important;
+    padding: 0 40px 100px !important;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.7s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ═══ HEADER ═══════════════════════════════════════════════════════════════ */
+.em-header-wrap {
+    text-align: center;
+    padding: 72px 0 52px;
+    position: relative;
+    animation: fadeUp 0.8s cubic-bezier(.22,1,.36,1) both;
+}
+/* Linhas laterais com animação */
+.em-header-wrap::before, .em-header-wrap::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: calc(50% - 260px);
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(197,165,102,0.4));
+    animation: glow 3.5s ease-in-out infinite;
+}
+.em-header-wrap::before { left: 0; transform: translateY(-50%) scaleX(-1); }
+.em-header-wrap::after  { right: 0; transform: translateY(-50%); }
+
+/* Monograma — círculo dourado acima do nome */
+.em-monogram {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 1px solid rgba(197,165,102,0.35);
+    margin-bottom: 16px;
+    position: relative;
+    animation: floatY 4s ease-in-out infinite;
+}
+.em-monogram::before {
+    content: '';
+    position: absolute; inset: -5px;
+    border-radius: 50%;
+    border: 1px solid rgba(197,165,102,0.12);
+    animation: pulseRing 3s ease-in-out infinite;
+}
+.em-monogram-text {
+    font-family: var(--serif);
+    font-size: 1.1rem; font-weight: 600;
+    color: var(--g); letter-spacing: 3px;
+}
+
+.em-eyebrow {
+    font-family: var(--sans);
+    font-size: 0.68rem; font-weight: 600;
+    letter-spacing: 5px; text-transform: uppercase;
+    color: rgba(197,165,102,0.42);
+    margin-bottom: 12px;
+}
+.em-name {
+    font-family: var(--serif);
+    font-size: clamp(3rem, 5.5vw, 4.8rem);
+    font-weight: 600; line-height: 1.0;
+    letter-spacing: 1px; margin: 0;
+    background: linear-gradient(110deg,
+        #EDE5D4 15%, #C5A566 40%, #D4B87A 55%, #EDE5D4 75%);
+    background-size: 600px 100%;
+    background-clip: text; -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmerText 5s linear infinite;
+}
+.em-subtitle {
+    font-family: var(--serif);
+    font-size: 0.9rem; font-style: italic;
+    color: rgba(197,165,102,0.5);
+    letter-spacing: 3.5px; margin-top: 10px;
+    text-transform: uppercase;
+}
+.em-badge-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; margin-top: 22px;
+}
+.em-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid rgba(197,165,102,0.18);
+    border-radius: 100px;
+    font-size: 0.7rem; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: rgba(197,165,102,0.5);
+}
+.em-badge-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--g); opacity: 0.6;
+    animation: glow 2s ease-in-out infinite;
+}
+.em-ornament {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; margin-top: 24px;
+}
+.em-ornament-line {
+    width: 80px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(197,165,102,0.45));
+    animation: glow 3s ease-in-out infinite;
+}
+.em-ornament-line.rev {
+    background: linear-gradient(90deg, rgba(197,165,102,0.45), transparent);
+}
+.em-ornament-diamond { color: rgba(197,165,102,0.65); font-size: 0.55rem; }
+
+/* ═══ DIVISORES ═══════════════════════════════════════════════════════════ */
+.em-divider {
+    display: flex; align-items: center; gap: 16px;
+    margin: 44px 0 30px;
+}
+.em-divider-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg,
+        rgba(197,165,102,0.05), rgba(197,165,102,0.2), rgba(197,165,102,0.05));
+}
+.em-divider-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 16px;
+    border: 1px solid rgba(197,165,102,0.18);
+    border-radius: 100px;
+    background: rgba(197,165,102,0.04);
+}
+.em-divider-label {
+    font-size: 0.68rem; font-weight: 600;
+    letter-spacing: 3.5px; text-transform: uppercase;
+    color: rgba(197,165,102,0.45); white-space: nowrap;
+}
+.em-divider-num {
+    font-family: var(--serif);
+    font-size: 0.75rem; color: rgba(197,165,102,0.35);
+}
+.em-section-note {
+    font-size: 0.88rem; color: rgba(237,229,212,0.3);
+    text-align: center; letter-spacing: 0.3px;
+    margin: 4px 0 28px; line-height: 1.6;
+}
+
+/* ═══ UPLOAD ZONE ══════════════════════════════════════════════════════════ */
+.upload-wrap {
+    border-radius: var(--r-lg);
+    border: 1px solid rgba(197,165,102,0.18);
+    background: linear-gradient(145deg,
+        rgba(197,165,102,0.04) 0%,
+        rgba(10,15,24,0.8) 100%);
+    padding: 4px;
+    transition: all 0.4s cubic-bezier(.22,1,.36,1);
+    animation: fadeUp 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+.upload-wrap:hover {
+    border-color: rgba(197,165,102,0.45);
+    box-shadow: 0 0 60px rgba(197,165,102,0.07),
+                inset 0 1px 0 rgba(197,165,102,0.08);
+}
+[data-testid="stFileUploader"] {
+    border-radius: var(--r-md) !important;
+    border: none !important;
+    background: transparent !important;
+}
+[data-testid="stFileUploadDropzone"] {
+    background: transparent !important;
+    border: 1px dashed rgba(197,165,102,0.25) !important;
+    border-radius: var(--r-md) !important;
+    padding: 44px !important;
+    transition: all 0.3s ease;
+}
+[data-testid="stFileUploader"]:hover [data-testid="stFileUploadDropzone"] {
+    border-color: rgba(197,165,102,0.5) !important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] span,
+[data-testid="stFileUploaderDropzoneInstructions"] small {
+    color: rgba(197,165,102,0.55) !important;
+    font-family: var(--sans) !important;
+    font-size: 0.9rem !important; letter-spacing: 0.5px;
+}
+[data-testid="stFileUploadDropzone"] button {
+    background: rgba(197,165,102,0.07) !important;
+    border: 1px solid rgba(197,165,102,0.35) !important;
+    color: var(--g) !important;
+    border-radius: var(--r-sm) !important;
+    font-family: var(--sans) !important;
+    font-size: 0.66rem !important; font-weight: 600 !important;
+    letter-spacing: 2px !important; text-transform: uppercase !important;
+    padding: 9px 24px !important;
+    transition: all 0.25s ease;
+}
+[data-testid="stFileUploadDropzone"] button:hover {
+    background: rgba(197,165,102,0.14) !important;
+    border-color: var(--g) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Tutorial de upload */
+.upload-tutorial {
+    display: flex; gap: 24px; justify-content: center;
+    flex-wrap: wrap;
+    padding: 20px 0 4px;
+}
+.upload-step {
+    display: flex; align-items: center; gap: 8px;
+}
+.upload-step-n {
+    width: 22px; height: 22px;
+    border-radius: 50%; border: 1px solid rgba(197,165,102,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 600; color: rgba(197,165,102,0.55);
+    flex-shrink: 0;
+}
+.upload-step-t {
+    font-size: 0.82rem; color: rgba(237,229,212,0.35); letter-spacing: 0.3px;
+}
+.upload-step-arrow {
+    font-size: 0.6rem; color: rgba(197,165,102,0.2);
+    margin: 0 -12px; align-self: center;
+}
+
+/* ═══ METRIC CARDS ═════════════════════════════════════════════════════════ */
+.metric-card {
+    background: linear-gradient(145deg, var(--p3) 0%, var(--p2) 100%);
+    border: 1px solid rgba(197,165,102,0.12);
+    border-top: none;
+    border-radius: var(--r-md);
+    padding: 28px 24px 24px;
+    text-align: left;
+    position: relative; overflow: hidden;
+    transition: all 0.35s cubic-bezier(.22,1,.36,1);
+    animation: fadeUp 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+/* Linha superior colorida */
+.metric-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--g), transparent);
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+/* Reflexo de luz interno */
+.metric-card::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 50%;
+    background: linear-gradient(180deg,
+        rgba(197,165,102,0.04) 0%, transparent 100%);
+    border-radius: var(--r-md) var(--r-md) 0 0;
+    pointer-events: none;
+}
+.metric-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    border-color: rgba(197,165,102,0.28);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4),
+                0 0 30px rgba(197,165,102,0.07);
+}
+.metric-card:hover::before { opacity: 1; }
+
+.metric-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--r-sm);
+    border: 1px solid rgba(197,165,102,0.2);
+    background: rgba(197,165,102,0.07);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+    transition: all 0.3s ease;
+}
+.metric-card:hover .metric-icon {
+    background: rgba(197,165,102,0.13);
+    border-color: rgba(197,165,102,0.4);
+}
+.metric-icon svg {
+    width: 18px; height: 18px;
+    stroke: var(--g); fill: none; stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+.metric-card h4 {
+    font-family: var(--sans);
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 3.5px; text-transform: uppercase;
+    color: rgba(197,165,102,0.45); margin: 0 0 8px 0;
+}
+.metric-card h2 {
+    font-family: var(--serif);
+    font-size: 3rem; font-weight: 600;
+    line-height: 1; margin: 0;
+    background: linear-gradient(135deg, var(--g2) 0%, var(--g) 100%);
+    background-clip: text; -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.metric-card-sub {
+    font-size: 0.78rem; color: rgba(197,165,102,0.3);
+    letter-spacing: 0.8px; margin-top: 6px;
+    font-style: italic;
+}
+
+/* ═══ DOWNLOAD SECTION ═════════════════════════════════════════════════════ */
+.dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+[data-testid="stDownloadButton"] > button {
+    background: var(--p3) !important;
+    border: 1px solid rgba(197,165,102,0.14) !important;
+    color: rgba(197,165,102,0.8) !important;
+    border-radius: var(--r-md) !important;
+    font-family: var(--sans) !important;
+    font-size: 0.78rem !important; font-weight: 500 !important;
+    letter-spacing: 1px !important; text-transform: uppercase !important;
+    padding: 14px 18px !important;
+    transition: all 0.3s cubic-bezier(.22,1,.36,1) !important;
+    width: 100% !important; text-align: left !important;
+    position: relative !important; overflow: hidden !important;
+}
+/* Linha lateral de acento */
+[data-testid="stDownloadButton"] > button::before {
+    content: '';
+    position: absolute; top: 12%; left: 0;
+    width: 3px; height: 76%;
+    background: linear-gradient(180deg, transparent, var(--g), transparent);
+    border-radius: 0 2px 2px 0; opacity: 0.4;
+    transition: opacity 0.25s ease;
+}
+/* Reflexo de entrada */
+[data-testid="stDownloadButton"] > button::after {
+    content: '';
+    position: absolute; top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(197,165,102,0.06), transparent);
+    transition: left 0.45s ease;
+    transform: skewX(-15deg);
+}
+[data-testid="stDownloadButton"] > button:hover {
+    background: var(--p4) !important;
+    border-color: rgba(197,165,102,0.35) !important;
+    color: var(--g) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 16px rgba(197,165,102,0.06) !important;
+}
+[data-testid="stDownloadButton"] > button:hover::before { opacity: 1; }
+[data-testid="stDownloadButton"] > button:hover::after  { left: 100%; }
+
+/* ═══ DATAFRAME ════════════════════════════════════════════════════════════ */
+[data-testid="stDataFrame"] {
+    border: 1px solid rgba(197,165,102,0.12) !important;
+    border-radius: var(--r-md) !important;
+    overflow: hidden !important;
+    animation: fadeUp 0.4s ease both;
+}
+[data-testid="stDataFrame"] th {
+    background: var(--p3) !important;
+    color: rgba(197,165,102,0.65) !important;
+    font-family: var(--sans) !important;
+    font-size: 0.72rem !important; font-weight: 600 !important;
+    letter-spacing: 2px !important; text-transform: uppercase !important;
+    border-bottom: 1px solid rgba(197,165,102,0.15) !important;
+    padding: 14px 16px !important;
+}
+[data-testid="stDataFrame"] td {
+    font-family: var(--sans) !important;
+    font-size: 0.86rem !important;
+    color: rgba(237,229,212,0.75) !important;
+    border-color: rgba(197,165,102,0.06) !important;
+    padding: 11px 16px !important;
+}
+[data-testid="stDataFrame"] tr:hover td {
+    background: rgba(197,165,102,0.04) !important;
+}
+
+/* ═══ ALERT / INFO ═════════════════════════════════════════════════════════ */
+[data-testid="stAlert"] {
+    background: rgba(197,165,102,0.05) !important;
+    border: 1px solid rgba(197,165,102,0.18) !important;
+    border-radius: var(--r-md) !important;
+    color: rgba(197,165,102,0.7) !important;
+    font-size: 0.82rem !important;
+}
+
+/* ═══ SPINNER ══════════════════════════════════════════════════════════════ */
+[data-testid="stSpinner"] > div {
+    border-color: rgba(197,165,102,0.15) !important;
+    border-top-color: var(--g) !important;
+    border-radius: 50%;
+}
+[data-testid="stSpinner"] p {
+    color: rgba(197,165,102,0.5) !important;
+    font-family: var(--sans) !important;
+    font-size: 0.82rem !important; letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+}
+
+/* ═══ SIDEBAR ══════════════════════════════════════════════════════════════ */
+[data-testid="stSidebar"] {
+    background: #04060C;
+    border-right: 1px solid rgba(197,165,102,0.1);
+}
+[data-testid="stSidebar"] > div:first-child { padding-top: 0; }
+
+.sb-header {
+    padding: 28px 18px 18px;
+    border-bottom: 1px solid rgba(197,165,102,0.08);
+    position: relative;
+    background: linear-gradient(180deg,
+        rgba(197,165,102,0.04) 0%, transparent 100%);
+}
+.sb-header::after {
+    content: '';
+    position: absolute; bottom: -1px; left: 0;
+    width: 50px; height: 1px;
+    background: var(--g);
+    animation: glow 2.5s ease-in-out infinite;
+}
+.sb-eyebrow {
+    font-size: 0.65rem; font-weight: 600;
+    letter-spacing: 4px; text-transform: uppercase;
+    color: rgba(197,165,102,0.32); margin-bottom: 4px;
+}
+.sb-title {
+    font-family: var(--serif);
+    font-size: 1.3rem; font-weight: 600;
+    color: var(--c); letter-spacing: 0.5px; margin: 0;
+}
+.sb-title span { color: var(--g); }
+
+/* Tutorial na sidebar */
+.sb-tutorial {
+    margin: 12px 14px;
+    padding: 12px 14px;
+    border-radius: var(--r-sm);
+    background: rgba(197,165,102,0.04);
+    border: 1px solid rgba(197,165,102,0.1);
+}
+.sb-tutorial-title {
+    font-size: 0.68rem; font-weight: 600;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    color: rgba(197,165,102,0.4); margin-bottom: 7px;
+}
+.sb-tutorial-text {
+    font-size: 0.82rem; color: rgba(237,229,212,0.38);
+    line-height: 1.6; letter-spacing: 0.2px;
+}
+
+/* Botões marcar/desmarcar */
+[data-testid="stSidebar"] .stButton > button {
+    border-radius: var(--r-sm) !important;
+    font-family: var(--sans) !important;
+    font-size: 0.57rem !important; font-weight: 600 !important;
+    letter-spacing: 1.8px !important; text-transform: uppercase !important;
+    padding: 7px 0 !important; width: 100% !important;
+    transition: all 0.2s ease !important; border: none !important;
+}
+[data-testid="stSidebar"] .stButton:nth-of-type(1) > button {
+    background: rgba(197,165,102,0.1) !important;
+    color: var(--g) !important;
+    border-right: 1px solid rgba(197,165,102,0.12) !important;
+}
+[data-testid="stSidebar"] .stButton:nth-of-type(1) > button:hover {
+    background: rgba(197,165,102,0.18) !important;
+    transform: none !important;
+}
+[data-testid="stSidebar"] .stButton:nth-of-type(2) > button {
+    background: transparent !important;
+    color: rgba(237,229,212,0.22) !important;
+}
+[data-testid="stSidebar"] .stButton:nth-of-type(2) > button:hover {
+    color: rgba(237,229,212,0.5) !important;
+    background: rgba(255,255,255,0.025) !important;
+}
+
+/* Checkboxes como items de lista */
+[data-testid="stSidebar"] .stCheckbox { margin:0 !important; padding:0 !important; }
+[data-testid="stSidebar"] .stCheckbox > label > div:first-child { display:none !important; }
+[data-testid="stSidebar"] .stCheckbox > label {
+    display: flex !important; align-items: center !important;
+    gap: 8px !important; width: 100% !important;
+    padding: 8px 14px 8px 16px !important;
+    margin: 0 !important; cursor: pointer !important;
+    border-left: 2px solid transparent !important;
+    border-radius: 0 var(--r-sm) var(--r-sm) 0 !important;
+    transition: all 0.18s ease !important;
+    background: transparent !important;
+}
+[data-testid="stSidebar"] .stCheckbox > label:hover {
+    background: rgba(197,165,102,0.04) !important;
+    border-left-color: rgba(197,165,102,0.22) !important;
+}
+[data-testid="stSidebar"] .stCheckbox > label > div:last-child,
+[data-testid="stSidebar"] .stCheckbox > label > span {
+    font-family: var(--sans) !important;
+    font-size: 0.8rem !important; font-weight: 400 !important;
+    color: rgba(237,229,212,0.28) !important;
+    letter-spacing: 0.8px !important; text-transform: uppercase !important;
+    line-height: 1 !important;
+}
+[data-testid="stSidebar"] .stCheckbox:has(input:checked) > label {
+    border-left-color: var(--g) !important;
+    background: rgba(197,165,102,0.06) !important;
+}
+[data-testid="stSidebar"] .stCheckbox:has(input:checked) > label > div:last-child,
+[data-testid="stSidebar"] .stCheckbox:has(input:checked) > label > span {
+    color: rgba(197,165,102,0.85) !important; font-weight: 500 !important;
+}
+
+.sidebar-divider {
+    border: none;
+    border-top: 1px solid rgba(197,165,102,0.07);
+    margin: 4px 0 0;
+}
+.rubrica-count {
+    padding: 8px 16px 16px;
+    font-size: 0.68rem; font-family: var(--sans);
+    letter-spacing: 2px; text-transform: uppercase;
+}
+
+/* ═══ FOOTER ═══════════════════════════════════════════════════════════════ */
+.em-footer {
+    margin-top: 100px;
+    padding: 48px 0 24px;
+    border-top: 1px solid rgba(197,165,102,0.1);
+    display: flex; flex-direction: column;
+    align-items: center; gap: 16px;
+    position: relative;
+}
+.em-footer::before {
+    content: '';
+    position: absolute; top: -1px; left: 50%;
+    transform: translateX(-50%);
+    width: 100px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--g), transparent);
+    animation: glow 3s ease-in-out infinite;
+}
+.em-footer-name {
+    font-family: var(--serif);
+    font-size: 1.8rem; font-weight: 600; font-style: italic;
+    color: var(--g); letter-spacing: 2px;
+}
+.em-footer-contacts {
+    display: flex; gap: 28px; flex-wrap: wrap; justify-content: center;
+}
+.em-footer-contact {
+    font-size: 0.8rem; color: rgba(197,165,102,0.4); letter-spacing: 1px;
+}
+.em-footer-contact a {
+    color: rgba(197,165,102,0.4); text-decoration: none;
+    transition: color 0.2s;
+}
+.em-footer-contact a:hover { color: var(--g); }
+.em-whatsapp-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(197,165,102,0.05);
+    border: 1px solid rgba(197,165,102,0.3);
+    border-radius: var(--r-sm);
+    color: rgba(197,165,102,0.7);
+    font-family: var(--sans); font-size: 0.64rem;
+    font-weight: 600; letter-spacing: 2.5px;
+    text-transform: uppercase; padding: 11px 28px;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(.22,1,.36,1);
+    cursor: pointer; margin-top: 6px; position: relative; overflow: hidden;
+}
+.em-whatsapp-btn::after {
+    content: '';
+    position: absolute; top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(197,165,102,0.08), transparent);
+    transform: skewX(-15deg);
+    transition: left 0.5s ease;
+}
+.em-whatsapp-btn:hover {
+    border-color: var(--g); color: var(--g); text-decoration: none;
+    background: rgba(197,165,102,0.1);
+    box-shadow: 0 8px 30px rgba(197,165,102,0.1);
+    transform: translateY(-2px);
+}
+.em-whatsapp-btn:hover::after { left: 120%; }
+
+/* ═══ SCROLLBAR ════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: var(--p); }
+::-webkit-scrollbar-thumb {
+    background: rgba(197,165,102,0.22);
+    border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(197,165,102,0.5); }
+
+/* ═══ HEADER NATIVO ════════════════════════════════════════════════════════ */
+header[data-testid="stHeader"] {
+    background: rgba(4,6,12,0.9) !important;
+    border-bottom: 1px solid rgba(197,165,102,0.07) !important;
+    backdrop-filter: blur(16px) !important;
+}
+
+/* ═══ SELO DE FUNDAÇÃO — fixo, canto inferior direito ══════════════════════ */
+.em-founder-seal {
+    position: fixed;
+    bottom: 20px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    pointer-events: none;
+    opacity: 0.65;
+    transition: opacity 0.4s ease;
+}
+.em-founder-seal:hover {
+    opacity: 1;
+    pointer-events: auto;
+}
+.em-seal-line {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(197,165,102,0.5));
+    margin-bottom: 6px;
+    animation: glow 3s ease-in-out infinite;
+}
+.em-seal-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.46rem;
+    font-weight: 600;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    color: rgba(197,165,102,0.35);
+    text-align: right;
+}
+.em-seal-name {
+    font-family: 'Great Vibes', cursive;
+    font-size: 1.6rem;
+    color: rgba(197,165,102,0.6);
+    line-height: 1;
+    text-align: right;
+}
+.em-seal-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.42rem;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(197,165,102,0.22);
+    text-align: right;
+    margin-top: 1px;
+}
+.em-seal-ornament {
+    font-size: 0.35rem;
+    color: rgba(197,165,102,0.28);
+    letter-spacing: 4px;
+    margin-top: 4px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- 1b. LÓGICA DE LOGIN ---
+def _check_login(email: str, senha: str) -> bool:
+    return email.strip() == "edson.senabr@gmail.com" and senha == "Edsonsena14"
+
+if "autenticado" not in st.session_state:
+    st.session_state["autenticado"] = False
+
+if not st.session_state["autenticado"]:
+
+    # Tela de login — visual fullscreen + form nativo Streamlit
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Great+Vibes&display=swap');
+
+    header,footer,[data-testid="stSidebar"],[data-testid="stToolbar"],
+    [data-testid="stDecoration"],[data-testid="stStatusWidget"],
+    [data-testid="stHeader"]{display:none!important;}
+
+    html,body,.stApp{
+        margin:0!important;padding:0!important;
+        background:#030508!important;
+        background-image:
+            linear-gradient(rgba(197,165,102,.016) 1px,transparent 1px),
+            linear-gradient(90deg,rgba(197,165,102,.016) 1px,transparent 1px)!important;
+        background-size:56px 56px!important;
+    }
+
+    /* Zera todo padding do Streamlit */
+    .block-container,.main .block-container,div.block-container,
+    section[data-testid="stMain"],section[data-testid="stMain"]>div,
+    section[data-testid="stMain"]>div>div,section[data-testid="stMain"]>div>div>div,
+    [data-testid="stAppViewBlockContainer"],[data-testid="stAppViewBlockContainer"]>div,
+    [data-testid="stMainBlockContainer"],[data-testid="stMainBlockContainer"]>div,
+    .appview-container .main,.appview-container .main>div,
+    .appview-container section{
+        padding:0!important;margin:0!important;
+        max-width:100%!important;width:100%!important;
+        min-height:0!important;
+    }
+    [data-testid="stHorizontalBlock"]{gap:0!important;padding:0!important;margin:0!important;align-items:stretch!important;}
+    [data-testid="stHorizontalBlock"]>div{padding:0!important;margin:0!important;}
+    [data-testid="stVerticalBlock"]{gap:0!important;padding:0!important;margin:0!important;}
+    [data-testid="stVerticalBlock"]>div,[data-testid="stVerticalBlock"]>div>div{padding:0!important;margin:0!important;}
+    [data-testid="stMarkdown"]{margin:0!important;padding:0!important;}
+    [data-testid="stMarkdown"]>div{margin:0!important;padding:0!important;}
+    div.stMarkdown,div.stMarkdown>div{margin:0!important;padding:0!important;}
+    [data-testid="stForm"]{background:transparent!important;border:none!important;padding:0!important;margin:0!important;}
+    [data-testid="stForm"]>div,[data-testid="stForm"]>div>div{padding:0!important;margin:0!important;}
+    div[data-testid="stTextInput"]{margin-bottom:0!important;}
+    div[data-testid="stTextInput"]>div{padding:0!important;}
+
+    /* ══ LAYOUT 2 COLUNAS ══ */
+    .lp-wrap{
+        display:grid;
+        grid-template-columns:1.1fr 1fr;
+        min-height:100vh;
+        width:100%;
+    }
+
+    /* COLUNA ESQUERDA */
+    .lp-L{
+        background:linear-gradient(150deg,rgba(197,165,102,.07) 0%,rgba(3,5,8,.02) 55%,transparent 100%);
+        border-right:1px solid rgba(197,165,102,.1);
+        padding:clamp(28px,5vh,56px) clamp(24px,3.5vw,48px);
+        display:flex;flex-direction:column;justify-content:space-between;
+        position:relative;overflow:hidden;min-height:100vh;
+    }
+    .lp-L::after{
+        content:'';position:absolute;bottom:-100px;right:-100px;
+        width:clamp(180px,26vw,340px);height:clamp(180px,26vw,340px);
+        border-radius:50%;border:1px solid rgba(197,165,102,.06);pointer-events:none;
+    }
+    .lp-brand{display:flex;align-items:center;gap:10px;}
+    .lp-mark{
+        width:clamp(28px,2.8vw,38px);height:clamp(28px,2.8vw,38px);
+        background:rgba(197,165,102,.1);border:1px solid rgba(197,165,102,.24);
+        border-radius:8px;display:flex;align-items:center;justify-content:center;
+        font-family:'Cormorant Garamond',serif;font-size:clamp(11px,1.1vw,15px);
+        font-weight:700;color:#C5A566;flex-shrink:0;
+    }
+    .lp-bname{font-size:clamp(7px,.65vw,10px);letter-spacing:3px;text-transform:uppercase;color:rgba(237,229,212,.25);font-weight:600;}
+    .lp-mid{flex:1;display:flex;flex-direction:column;justify-content:center;padding:clamp(16px,2.5vh,32px) 0;}
+    .lp-pname{
+        font-family:'Cormorant Garamond',serif;
+        font-size:clamp(40px,5.8vw,80px);font-weight:600;line-height:.9;
+        color:#EDE5D4;margin-bottom:clamp(4px,.5vh,8px);
+    }
+    .lp-x{
+        background:linear-gradient(110deg,#EDE5D4 10%,#C5A566 35%,#D4B87A 55%,#EDE5D4 75%);
+        background-size:600px;
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+        animation:lpsh 5s linear infinite;
+    }
+    @keyframes lpsh{0%{background-position:-600px 0}100%{background-position:600px 0}}
+    .lp-ptag{
+        font-family:'Cormorant Garamond',serif;font-style:italic;
+        font-size:clamp(12px,1.2vw,17px);color:rgba(197,165,102,.42);
+        margin-bottom:clamp(14px,2vh,24px);letter-spacing:.5px;
+    }
+    .lp-spd{
+        display:flex;align-items:center;gap:clamp(8px,1vw,14px);
+        padding:clamp(10px,1.2vh,14px) clamp(12px,1.4vw,18px);
+        background:rgba(197,165,102,.05);border:1px solid rgba(197,165,102,.14);
+        border-left:3px solid rgba(197,165,102,.6);border-radius:0 6px 6px 0;
+        margin-bottom:clamp(14px,2vh,24px);
+    }
+    .lp-spdn{font-family:'Cormorant Garamond',serif;font-size:clamp(26px,3.5vw,48px);font-weight:600;color:#C5A566;line-height:1;flex-shrink:0;}
+    .lp-spdt{font-size:clamp(11px,.9vw,13px);font-weight:600;color:rgba(237,229,212,.55);}
+    .lp-spds{font-size:clamp(9px,.75vw,11px);color:rgba(237,229,212,.25);margin-top:3px;line-height:1.55;}
+    .lp-bens{display:flex;flex-direction:column;}
+    .lp-ben{display:flex;align-items:flex-start;gap:clamp(8px,1vw,14px);padding:clamp(9px,1.2vh,13px) 0;border-bottom:1px solid rgba(197,165,102,.07);}
+    .lp-ben:last-child{border-bottom:none;}
+    .lp-bnum{font-family:'Cormorant Garamond',serif;font-size:clamp(14px,1.4vw,19px);font-weight:300;color:rgba(197,165,102,.22);min-width:22px;line-height:1.3;flex-shrink:0;}
+    .lp-btt{font-size:clamp(11px,.9vw,13px);font-weight:600;color:rgba(237,229,212,.58);margin-bottom:2px;}
+    .lp-bdd{font-size:clamp(9px,.78vw,11px);color:rgba(237,229,212,.26);line-height:1.6;}
+    .lp-foot{font-size:clamp(8px,.65vw,10px);color:rgba(197,165,102,.2);letter-spacing:.8px;line-height:1.9;}
+
+    /* COLUNA DIREITA */
+    .lp-R{
+        background:rgba(4,6,12,.97);
+        padding:clamp(28px,5vh,56px) clamp(24px,3.8vw,52px);
+        display:flex;flex-direction:column;justify-content:space-between;
+        min-height:100vh;
+    }
+    .lp-rlogo{font-family:'Cormorant Garamond',serif;font-size:clamp(26px,3.5vw,52px);font-weight:600;color:#EDE5D4;line-height:1;margin-bottom:4px;}
+    .lp-rsub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(11px,1vw,14px);color:rgba(197,165,102,.32);margin-bottom:clamp(18px,2.8vh,32px);letter-spacing:.8px;}
+    .lp-orn{display:flex;align-items:center;gap:10px;margin-bottom:clamp(14px,2.2vh,24px);}
+    .lp-ornl{flex:1;height:1px;background:rgba(197,165,102,.1);}
+    .lp-ornd{font-size:7px;color:rgba(197,165,102,.24);}
+
+    /* Inputs nativos do Streamlit estilizados */
+    [data-testid="stForm"] label{
+        font-family:'Inter',sans-serif!important;font-size:clamp(8px,.65vw,10px)!important;
+        font-weight:600!important;letter-spacing:3px!important;text-transform:uppercase!important;
+        color:rgba(197,165,102,.36)!important;
+    }
+    [data-testid="stForm"] label span{display:none!important;}
+    [data-testid="stForm"] input{
+        background:rgba(197,165,102,.04)!important;border:1px solid rgba(197,165,102,.15)!important;
+        border-radius:8px!important;color:#EDE5D4!important;
+        font-family:'Inter',sans-serif!important;
+        font-size:clamp(13px,1.1vw,16px)!important;font-weight:300!important;
+        padding:clamp(10px,1.3vh,14px) 16px!important;
+        caret-color:#C5A566!important;outline:none!important;box-shadow:none!important;transition:all .25s!important;
+    }
+    [data-testid="stForm"] input:focus{
+        border-color:rgba(197,165,102,.5)!important;background:rgba(197,165,102,.07)!important;
+        box-shadow:0 0 0 3px rgba(197,165,102,.06)!important;
+    }
+    [data-testid="stFormSubmitButton"]>button{
+        width:100%!important;background:rgba(197,165,102,.11)!important;
+        border:1px solid rgba(197,165,102,.4)!important;border-radius:8px!important;
+        color:#C5A566!important;font-family:'Inter',sans-serif!important;
+        font-size:clamp(9px,.75vw,11px)!important;font-weight:700!important;
+        letter-spacing:3.5px!important;text-transform:uppercase!important;
+        padding:clamp(11px,1.5vh,16px)!important;margin-top:clamp(8px,1.2vh,14px)!important;
+        transition:all .3s!important;
+    }
+    [data-testid="stFormSubmitButton"]>button:hover{
+        background:rgba(197,165,102,.2)!important;border-color:#C5A566!important;
+        transform:translateY(-2px)!important;
+    }
+    [data-testid="stAlert"]{
+        background:rgba(180,60,60,.05)!important;border:1px solid rgba(180,60,60,.2)!important;
+        border-radius:8px!important;color:rgba(220,110,110,.8)!important;font-size:clamp(10px,.85vw,12px)!important;
+    }
+    [data-testid="stAlert"] svg{display:none!important;}
+
+    /* Grid stats + why */
+    .lp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(197,165,102,.09);border-radius:10px;overflow:hidden;margin-top:clamp(14px,2vh,22px);}
+    .lp-gs{background:#04060C;padding:clamp(10px,1.4vh,16px) clamp(10px,1.2vw,16px);}
+    .lp-gsn{font-family:'Cormorant Garamond',serif;font-size:clamp(16px,1.8vw,26px);font-weight:600;color:#C5A566;line-height:1;}
+    .lp-gsl{font-size:clamp(7px,.58vw,9px);font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(237,229,212,.18);margin-top:4px;}
+    .lp-why{margin-top:clamp(10px,1.5vh,16px);padding-top:clamp(10px,1.4vh,14px);border-top:1px solid rgba(197,165,102,.07);}
+    .lp-wlbl{font-size:clamp(7px,.6vw,9px);font-weight:600;letter-spacing:3px;text-transform:uppercase;color:rgba(197,165,102,.22);margin-bottom:10px;}
+    .lp-wrow{display:flex;}
+    .lp-wi{flex:1;padding:0 10px;border-right:1px solid rgba(197,165,102,.07);text-align:center;}
+    .lp-wi:first-child{padding-left:0;text-align:left;}
+    .lp-wi:last-child{border-right:none;}
+    .lp-win{font-family:'Cormorant Garamond',serif;font-size:clamp(13px,1.3vw,18px);font-weight:600;color:#C5A566;line-height:1;}
+    .lp-wil{font-size:clamp(7px,.6vw,9px);color:rgba(237,229,212,.18);margin-top:3px;line-height:1.4;}
+    .lp-status{display:flex;align-items:center;gap:6px;margin-top:clamp(10px,1.4vh,14px);font-size:clamp(7px,.6vw,9px);color:rgba(197,165,102,.18);letter-spacing:1.5px;text-transform:uppercase;}
+    .lp-sdot{width:5px;height:5px;border-radius:50%;background:#4CAF50;animation:lppd 2.5s ease-in-out infinite;}
+    @keyframes lppd{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
+
+    /* Selo */
+    .lp-seal{position:fixed;bottom:28px;right:22px;display:flex;flex-direction:column;align-items:flex-end;gap:2px;opacity:.5;z-index:10;pointer-events:none;}
+    .lp-seal-line{width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(197,165,102,.5));margin-bottom:4px;}
+    .lp-seal-lbl{font-size:7px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:rgba(197,165,102,.28);text-align:right;}
+    .lp-seal-name{font-family:'Great Vibes',cursive;font-size:18px;color:rgba(197,165,102,.5);line-height:1;text-align:right;}
+    .lp-seal-sub{font-size:6px;letter-spacing:2px;text-transform:uppercase;color:rgba(197,165,102,.18);text-align:right;margin-top:1px;}
+
+    /* Mobile */
+    @media(max-width:768px){
+        .lp-wrap{grid-template-columns:1fr;}
+        .lp-L{min-height:auto;border-right:none;border-bottom:1px solid rgba(197,165,102,.1);}
+        .lp-R{min-height:auto;}
+        .lp-seal{display:none;}
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # ── LAYOUT ──────────────────────────────────────────────────────────────
+    col_L, col_R = st.columns([1.1, 1.0])
+
+    with col_L:
+        st.markdown('<div class="lp-wrap" style="display:contents">', unsafe_allow_html=True)
+        st.markdown('<div class="lp-L">', unsafe_allow_html=True)
+        st.markdown('<div class="lp-brand"><div class="lp-mark">EM</div><div class="lp-bname">Edson Medeiros · Consultorias</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-mid">', unsafe_allow_html=True)
+        st.markdown('<div class="lp-pname">Extrato<span class="lp-x">X</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-ptag">O rob&ocirc; que audita seu extrato em 10 segundos.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-spd"><div class="lp-spdn">10s</div><div><div class="lp-spdt">An&aacute;lise completa do extrato</div><div class="lp-spds">Do upload ao relat&oacute;rio pronto &mdash; sem esfor&ccedil;o manual</div></div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-bens">', unsafe_allow_html=True)
+        for num, t, d in [
+            ("01","Precis&atilde;o de 100%","Leitura posicional por coluna X &mdash; distingue d&eacute;bito de cr&eacute;dito sem falhas"),
+            ("02","19 rubricas monitoradas","CESTA, MORA, ANUIDADE, ENCARGOS, PARCELA, SEGURO e mais &mdash; detectadas automaticamente"),
+            ("03","Relat&oacute;rio jur&iacute;dico pronto","Planilha com Art. 42 CDC em dobro, pronta para peticionamento instantaneamente"),
+        ]:
+            st.markdown(f'<div class="lp-ben"><div class="lp-bnum">{num}</div><div><div class="lp-btt">{t}</div><div class="lp-bdd">{d}</div></div></div>', unsafe_allow_html=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-foot">(92) 99508-7379 &nbsp;&middot;&nbsp; edson.senabr@gmail.com</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col_R:
+        st.markdown('<div class="lp-R">', unsafe_allow_html=True)
+        st.markdown('<div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-rlogo">Extrato<span class="lp-x">X</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-rsub">Acesse o portal de auditoria</div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-orn"><div class="lp-ornl"></div><div class="lp-ornd">&#9670;</div><div class="lp-ornl"></div></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        with st.form("login_form", clear_on_submit=False):
+            _email = st.text_input("E-mail", placeholder="seu@email.com", key="login_email")
+            _senha = st.text_input("Senha", placeholder="••••••••••", type="password", key="login_senha")
+            _submitted = st.form_submit_button("◆  Acessar o ExtratoX")
+
+        if _submitted:
+            if _check_login(_email, _senha):
+                st.session_state["autenticado"] = True
+                st.rerun()
+            else:
+                st.error("Credenciais inválidas — verifique e-mail e senha")
+
+        st.markdown('<div class="lp-grid"><div class="lp-gs"><div class="lp-gsn">10s</div><div class="lp-gsl">An&aacute;lise</div></div><div class="lp-gs"><div class="lp-gsn">19</div><div class="lp-gsl">Rubricas</div></div><div class="lp-gs"><div class="lp-gsn">Art.42</div><div class="lp-gsl">CDC auto</div></div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-why"><div class="lp-wlbl">Por que usar</div><div class="lp-wrow"><div class="lp-wi"><div class="lp-win">100%</div><div class="lp-wil">Precis&atilde;o</div></div><div class="lp-wi"><div class="lp-win">0</div><div class="lp-wil">Esfor&ccedil;o manual</div></div><div class="lp-wi"><div class="lp-win">CDC</div><div class="lp-wil">Art. 42 auto</div></div></div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-status"><div class="lp-sdot"></div>Sistema online &nbsp;&middot;&nbsp; Vers&atilde;o 2.0</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="lp-seal"><div class="lp-seal-line"></div><div class="lp-seal-lbl">Fundado por</div><div class="lp-seal-name">Edson Medeiros</div><div class="lp-seal-sub">Consultorias &amp; Compliance &middot; 2024</div></div>', unsafe_allow_html=True)
+
+    st.stop()
+
+# --- (USUÁRIO AUTENTICADO — APP NORMAL A PARTIR DAQUI) ---
+
+# --- 2. RÚBRICAS ---
+#
+# Dicionário de rubricas do extrato do INSS (Histórico de Créditos).
+# Cada chave é o nome da rubrica como será exibido no relatório/planilha;
+# cada valor é o regex usado para identificá-la na linha "Descrição Rubrica"
+# da tabela de descontos do extrato.
+RUBRICAS_MESTRE = {
+    # "EMPRESTIMO SOBRE A RMC" — desconto sobre a Reserva de Margem Consignável.
+    # Código 217 no extrato do INSS (ver imagem de referência).
+    # Tolerante a variações de acentuação/espaçamento (ex: "EMPRÉSTIMO").
+    "EMPRESTIMO SOBRE A RMC": r"EMPR[EÉ]STIMO\s+SOBRE\s+A\s+RMC",
+}
+
+TERMOS_EXCLUSAO = r"TRANSF|SALDO|SDO|TRANSFERENCIA|SALARIO"
+
+# --- 3. MOTOR — EXTRATO INSS (Histórico de Créditos) ---
+#
+# COMO FUNCIONA ESTE MOTOR (substitui o antigo motor "data inferior" do Bradesco):
+#
+# O extrato do INSS (Histórico de Créditos) tem, em cada página, um bloco de
+# cabeçalho com a tabela de identificação do benefício, e logo abaixo uma
+# linha de tabela com colunas:
+#
+#   Competência | Período | Valor Líquido | Meio de Pagamento | Status | ...
+#       01/2017   01/01/2017 a 31/01/2017   R$ 1.334,66   CCF - CONTA-CORRENTE   Pago ...
+#
+# A "Competência" (formato MM/AAAA) aparece sempre no canto superior esquerdo
+# dessa tabela e define o Mês/Ano de referência de TODOS os lançamentos da
+# tabela "Descrição Rubrica / Valor" que aparece embaixo, naquela mesma página.
+#
+# Abaixo dela vem a tabela de rubricas:
+#
+#   Código   Descrição Rubrica                  Valor
+#   101      VALOR TOTAL DE MR DO PERIODO        R$ 1.997,70
+#   201      IMPOSTO DE RENDA RETIDO NA FONTE     R$ 7,02
+#   216      CONSIGNACAO EMPRESTIMO BANCARIO      R$ 54,70
+#   ...
+#   217      EMPRESTIMO SOBRE A RMC               R$ 93,71   ← rubrica de interesse
+#   322      RESERVA DE MARGEM CONSIGNAVEL (RMC)  R$ 93,71
+#
+# REGRA DE EXTRAÇÃO (passo a passo solicitado):
+#   1. Ler o PDF página por página, linha por linha.
+#   2. Em cada página, localizar a "Competência" (MM/AAAA) — ela é o dado de
+#      data mais confiável e DEVE ser lida com precisão de 100%, pois é usada
+#      como referência de TODOS os lançamentos daquela página.
+#   3. Descer até a tabela "Descrição Rubrica" e, para cada linha, verificar
+#      se o texto bate com alguma rubrica de RUBRICAS_MESTRE.
+#   4. Ao encontrar uma rubrica, capturar o Valor que está na MESMA linha,
+#      à direita da descrição (não se usa mais busca em linhas anteriores/
+#      seguintes como no motor antigo — aqui rubrica e valor estão sempre
+#      juntos na mesma linha).
+#
+# Diferente do motor Bradesco antigo, NÃO há lógica de "data inferior"
+# (data vindo de uma linha futura). A data (Competência) já está disponível
+# no topo da página antes de processarmos as rubricas, então cada lançamento
+# é selado imediatamente com a Competência vigente daquela página.
+
+def _detectar_rubrica(texto_up, rubricas_alvo):
+    """Retorna o nome da rubrica detectada em uma linha de texto, ou None."""
+    for nome in rubricas_alvo:
+        if nome in RUBRICAS_MESTRE and re.search(RUBRICAS_MESTRE[nome], texto_up):
+            return nome
+    return None
+
+
+REGEX_COMPETENCIA = r"\b(\d{2}/\d{4})\b"
+
+
+def _extrair_competencia(texto_up):
+    """
+    Localiza a Competência (MM/AAAA) na linha da tabela "Competência | Período
+    | Valor Líquido | ...", que é a única fonte confiável de Mês/Ano para os
+    lançamentos da página.
+
+    PRECISA SER 100% PRECISA — esta data referencia TODOS os lançamentos de
+    rubrica encontrados depois dela na mesma página. Por isso o motor aplica
+    duas proteções contra falso positivo:
+
+    PROTEÇÃO 1 — Ignora linhas de cabeçalho "Compet. Inicial: MM/AAAA" e
+    "Compet. Final: MM/AAAA". Essas linhas também batem no formato MM/AAAA,
+    mas representam o período TOTAL do extrato (ex: todo o ano de 2017),
+    não a Competência de um lançamento específico. Se não forem excluídas,
+    o motor seria enganado e atribuiria a data errada às rubricas da página.
+
+    PROTEÇÃO 2 — Só aceita a Competência se a mesma linha também contiver uma
+    data no formato DD/MM/AAAA (ex: "01/01/2017"), pois essa é a assinatura
+    exclusiva da linha real da tabela de lançamentos:
+        "01/2017   01/01/2017 a 31/01/2017   R$ 1.334,66   ..."
+                    ^^^^^^^^^^ presença obrigatória
+    Isso garante que nenhuma outra linha do extrato (mesmo que também
+    contivesse um MM/AAAA por algum motivo) seja confundida com a linha
+    real da Competência.
+
+    Retorna a string 'MM/AAAA' ou None.
+    """
+    # PROTEÇÃO 1: descarta explicitamente linhas de cabeçalho de período total
+    if "COMPET. INICIAL" in texto_up or "COMPET. FINAL" in texto_up:
+        return None
+    if "COMPETÊNCIA INICIAL" in texto_up or "COMPETÊNCIA FINAL" in texto_up:
+        return None
+
+    m = re.search(REGEX_COMPETENCIA, texto_up)
+    if not m:
+        return None
+
+    # Garante que não é fragmento de uma data DD/MM/AAAA (ex: o "10/1974"
+    # dentro de "20/10/1974" não deve ser capturado como competência).
+    inicio = m.start()
+    if inicio >= 3 and re.match(r"\d{2}/$", texto_up[inicio - 3:inicio]):
+        # Há "DD/" imediatamente antes — isso é o miolo de uma data DD/MM/AAAA
+        return None
+
+    # PROTEÇÃO 2: exige uma data DD/MM/AAAA na mesma linha (assinatura da
+    # linha real "Competência | Período | ..."), sem ser a própria Competência.
+    if not re.search(r"\d{2}/\d{2}/\d{4}", texto_up):
+        return None
+
+    return m.group(1)
+
+
+def _extrair_valor_rubrica(texto_up):
+    """
+    Extrai o valor monetário (R$) que acompanha uma linha de rubrica.
+    Retorna a string do valor (ex: '93,71') sem o prefixo 'R$', ou None.
+    """
+    m = re.search(r"R?\$?\s*(\d{1,3}(?:\.\d{3})*,\d{2})(?!\s*%)", texto_up)
+    if not m:
+        return None
+    return m.group(1)
+
+
+def realizar_auditoria(arquivo, rubricas_alvo):
+    """
+    Motor de auditoria para extratos do INSS (Histórico de Créditos).
+
+    Para cada página do PDF:
+      1. Varre as linhas em busca da Competência (MM/AAAA) — é o dado de
+         data mais importante e deve ser lido com precisão de 100%.
+      2. A Competência encontrada vale para todos os lançamentos de rubrica
+         identificados a partir daquele ponto na página, até que uma nova
+         Competência apareça (extratos podem ter mais de uma competência
+         por página em alguns layouts; o motor sempre usa a Competência
+         mais recente já vista).
+      3. Para cada linha de rubrica reconhecida (RUBRICAS_MESTRE), captura
+         o valor na própria linha (à direita da descrição).
+    """
+    resultados = []
+
+    with pdfplumber.open(arquivo) as pdf:
+        for page in pdf.pages:
+            texto_pagina = page.extract_text() or ""
+            linhas_pagina = texto_pagina.split("\n")
+
+            competencia_atual = None
+
+            for linha in linhas_pagina:
+                texto_up = linha.upper().strip()
+                if not texto_up:
+                    continue
+
+                # PASSO 1 — procura a Competência nesta linha.
+                # A linha da Competência no extrato também contém Período,
+                # Valor Líquido, Meio de Pagamento etc. na mesma linha — por
+                # isso a busca de competência roda em toda linha, não só em
+                # linhas "isoladas".
+                comp_encontrada = _extrair_competencia(texto_up)
+                if comp_encontrada:
+                    competencia_atual = comp_encontrada
+                    # Esta linha é a linha da tabela de identificação do
+                    # benefício (Competência/Período/Valor Líquido/...), não
+                    # uma linha de rubrica — não tentamos detectar rubrica
+                    # nela para evitar falso positivo.
+                    continue
+
+                # PASSO 2 — procura rubrica de interesse nesta linha.
+                rubrica = _detectar_rubrica(texto_up, rubricas_alvo)
+                if not rubrica:
+                    continue
+
+                # PASSO 3 — captura o valor na MESMA linha da rubrica.
+                valor_final = _extrair_valor_rubrica(texto_up)
+                if not valor_final:
+                    continue
+
+                # Sem Competência identificada ainda nesta página: não é
+                # possível selar a data deste lançamento com confiança —
+                # melhor descartar do que arriscar uma data errada em um
+                # relatório de uso jurídico.
+                if not competencia_atual:
+                    continue
+
+                resultados.append({
+                    "DATA":      competencia_atual,   # formato MM/AAAA
+                    "CATEGORIA": rubrica,
+                    "VALOR":     valor_final,
+                    "HISTÓRICO": texto_up[:80],
+                })
+
+    return resultados
+
+# --- 4. GERAÇÃO DE PLANILHA ---
+def fix_date(d):
+    """
+    Normaliza a string de data para o formato aceito por pd.to_datetime.
+
+    Aceita dois formatos de entrada:
+      - 'MM/AAAA'      (Competência do extrato INSS) -> convertida para
+                         '01/MM/AAAA' (dia fixo 01, pois só o mês/ano importa
+                         para o agrupamento mensal/anual da planilha).
+      - 'DD/MM/AA' ou 'DD/MM/AAAA' (formato antigo, mantido por compatibilidade)
+                         -> ano de 2 dígitos é expandido para 4 dígitos.
+    """
+    d = str(d).strip()
+    p = d.split('/')
+
+    # Formato 'MM/AAAA' (Competência do INSS) — só 2 partes, ano com 4 dígitos
+    if len(p) == 2 and len(p[1]) == 4:
+        return f"01/{p[0]}/{p[1]}"
+
+    # Formato 'DD/MM/AAAA' ou 'DD/MM/AA' (compatibilidade com motor antigo)
+    if len(p) == 3 and len(p[2]) == 2:
+        p[2] = "20" + p[2]
+    return "/".join(p)
+
+def gerar_excel_calculos(df, rubrica_nome):
+    df = df.copy()
+    # Proteção contra dados nulos
+    rubrica_nome = str(rubrica_nome).strip() if rubrica_nome else "RUBRICA"
+    df['DATA']  = df['DATA'].fillna('00/0000').astype(str)
+    df['VALOR'] = df['VALOR'].fillna('0').astype(str)
+    if 'V_NUM' not in df.columns:
+        df['V_NUM'] = (df['VALOR']
+                       .str.replace('.', '', regex=False)
+                       .str.replace(',', '.', regex=False)
+                       .apply(lambda x: float(x) if x else 0.0))
+    df['DT']      = pd.to_datetime(df['DATA'].apply(fix_date), format='%d/%m/%Y', errors='coerce')
+    df['ANO']     = df['DT'].dt.year
+    df['MES_NUM'] = df['DT'].dt.month
+
+    agrupado = df.groupby(['ANO', 'MES_NUM'])['V_NUM'].sum().reset_index()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Tabela de Cálculos"
+
+    # ── Estilos ────────────────────────────────────────────────────────────────
+    font_titulo  = Font(bold=True, size=11, color="FFFFFF")   # branco no cinza escuro
+    font_header  = Font(bold=True, size=10)
+    font_valor   = Font(bold=False, size=10)
+    font_total   = Font(bold=True,  size=10)
+
+    fill_cinza   = PatternFill(start_color="9C9C9C", end_color="9C9C9C", fill_type="solid")
+    fill_branco  = PatternFill(start_color="F6F6F6", end_color="F6F6F6", fill_type="solid")
+    fill_vazio   = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+
+    borda = Border(
+        left=Side(style='thin',   color="AAAAAA"),
+        right=Side(style='thin',  color="AAAAAA"),
+        top=Side(style='thin',    color="AAAAAA"),
+        bottom=Side(style='thin', color="AAAAAA"),
+    )
+    borda_titulo = Border(
+        left=Side(style='medium',  color="707070"),
+        right=Side(style='medium', color="707070"),
+        top=Side(style='medium',   color="707070"),
+        bottom=Side(style='medium',color="707070"),
+    )
+
+    al_centro   = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    al_direita  = Alignment(horizontal='right',  vertical='center')
+    al_esq      = Alignment(horizontal='left',   vertical='center', wrap_text=True)
+
+    # ── Anos disponíveis ───────────────────────────────────────────────────────
+    anos = sorted(agrupado['ANO'].dropna().astype(int).unique())
+    if not anos:
+        anos = [datetime.now().year]
+    n_anos    = len(anos)
+    last_col  = n_anos + 1                          # última coluna com dados
+    last_let  = get_column_letter(last_col)
+
+    # ── Linha 1 — Título (ocupa coluna A + todas as colunas de anos) ──────────
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=last_col)
+    titulo_txt = f'VALORES DESCONTADOS INDEVIDAMENTE\n"{rubrica_nome}"'
+    c = ws.cell(row=1, column=1, value=titulo_txt)
+    c.font      = font_titulo
+    c.fill      = fill_cinza
+    c.alignment = al_centro
+    c.border    = borda_titulo
+    ws.row_dimensions[1].height = 42   # altura fixa: acomoda 2 linhas de texto
+
+    # ── Linha 2 — Cabeçalhos: MESES | ANO1 | ANO2 | ... ──────────────────────
+    ws.row_dimensions[2].height = 22
+    c = ws.cell(row=2, column=1, value="MESES")
+    c.font = font_header; c.fill = fill_cinza
+    c.alignment = al_centro; c.border = borda_titulo
+
+    for idx, ano in enumerate(anos):
+        c = ws.cell(row=2, column=idx + 2, value=int(ano))
+        c.font = font_header; c.fill = fill_cinza
+        c.alignment = al_centro; c.border = borda_titulo
+
+    # ── Linhas 3–14 — Meses ───────────────────────────────────────────────────
+    meses_nomes = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO",
+                   "JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"]
+
+    for m_idx, mes in enumerate(meses_nomes):
+        row = m_idx + 3
+        ws.row_dimensions[row].height = 18
+
+        # Coluna A: nome do mês
+        c = ws.cell(row=row, column=1, value=mes)
+        c.font = font_header; c.fill = fill_cinza
+        c.alignment = al_centro; c.border = borda
+
+        # Colunas de anos: valor ou vazio, sempre com fill e borda
+        for a_idx, ano in enumerate(anos):
+            col = a_idx + 2
+            val = agrupado[
+                (agrupado['ANO'] == ano) & (agrupado['MES_NUM'] == m_idx + 1)
+            ]['V_NUM'].sum()
+
+            c = ws.cell(row=row, column=col, value=val if val > 0 else None)
+            c.fill      = fill_branco if val > 0 else fill_vazio
+            c.border    = borda
+            c.alignment = al_direita
+            c.font      = font_valor
+            if val > 0:
+                c.number_format = '"R$" #,##0.00'
+
+    # ── Linha 15 — Valor Anual ────────────────────────────────────────────────
+    row_anual = 15
+    ws.row_dimensions[row_anual].height = 20
+    c = ws.cell(row=row_anual, column=1, value="VALOR ANUAL:")
+    c.font = font_total; c.fill = fill_cinza
+    c.alignment = al_centro; c.border = borda_titulo
+
+    for idx, ano in enumerate(anos):
+        col     = idx + 2
+        col_let = get_column_letter(col)
+        c = ws.cell(row=row_anual, column=col, value=f"=SUM({col_let}3:{col_let}14)")
+        c.font          = font_total
+        c.fill          = fill_branco
+        c.border        = borda_titulo
+        c.alignment     = al_direita
+        c.number_format = '"R$" #,##0.00'
+
+    # ── Linha 16 — Valor Total ────────────────────────────────────────────────
+    row_total = 16
+    ws.row_dimensions[row_total].height = 20
+    c = ws.cell(row=row_total, column=1, value="VALOR TOTAL:")
+    c.font = font_total; c.fill = fill_cinza
+    c.alignment = al_centro; c.border = borda_titulo
+
+    ws.merge_cells(start_row=row_total, start_column=2,
+                   end_row=row_total, end_column=last_col)
+    c = ws.cell(row=row_total, column=2,
+                value=f"=SUM(B{row_anual}:{last_let}{row_anual})")
+    c.font          = font_total
+    c.fill          = fill_branco
+    c.border        = borda_titulo
+    c.alignment     = al_direita
+    c.number_format = '"R$" #,##0.00'
+
+    # ── Linhas 17–18 — Valor em Dobro (Art. 42 CDC) ──────────────────────────
+    row_dobro = 17
+    ws.row_dimensions[row_dobro].height = 20
+    ws.row_dimensions[row_dobro + 1].height = 20
+    ws.merge_cells(start_row=row_dobro, start_column=1,
+                   end_row=row_dobro + 1, end_column=1)
+    c = ws.cell(row=row_dobro, column=1, value="VALOR EM DOBRO\nART. 42 DO CDC")
+    c.font = font_total; c.fill = fill_cinza
+    c.alignment = al_centro; c.border = borda_titulo
+
+    ws.merge_cells(start_row=row_dobro, start_column=2,
+                   end_row=row_dobro + 1, end_column=last_col)
+    c = ws.cell(row=row_dobro, column=2, value=f"=B{row_total}*2")
+    c.font          = font_total
+    c.fill          = fill_branco
+    c.border        = borda_titulo
+    c.alignment     = al_direita
+    c.number_format = '"R$" #,##0.00'
+
+    # ── Larguras de coluna ─────────────────────────────────────────────────────
+    ws.column_dimensions['A'].width = 22          # meses + rótulos
+    for i in range(2, last_col + 1):
+        ws.column_dimensions[get_column_letter(i)].width = 16   # anos
+
+    # ── Congelar cabeçalho ─────────────────────────────────────────────────────
+    ws.freeze_panes = 'B3'
+
+    output = io.BytesIO()
+    wb.save(output)
+    return output.getvalue()
+
+
+# --- 5. DASHBOARD ---
+st.markdown("""
+<div class="em-header-wrap">
+    <div class="em-monogram">
+        <span class="em-monogram-text">EM</span>
+    </div>
+    <div class="em-eyebrow">Assessoria Jurídica &nbsp;·&nbsp; Auditoria Bancária Inteligente</div>
+    <h1 class="em-name">Edson Medeiros</h1>
+    <div class="em-subtitle">Consultorias &amp; Compliance</div>
+    <div class="em-badge-row">
+        <div class="em-badge">
+            <div class="em-badge-dot"></div>
+            Sistema Online
+        </div>
+        <div class="em-badge">ExtratoX v2.0</div>
+        <div class="em-badge">INSS · Histórico de Créditos</div>
+    </div>
+    <div class="em-ornament">
+        <div class="em-ornament-line rev"></div>
+        <div class="em-ornament-diamond">◆</div>
+        <div class="em-ornament-line"></div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── SIDEBAR: painel de rubricas ──────────────────────────────────────────────
+
+# Estado inicial: todas marcadas
+if 'sel_all' not in st.session_state:
+    st.session_state.sel_all = True
+
+# Inicializa o estado individual de cada rubrica (na primeira execução)
+for r in RUBRICAS_MESTRE.keys():
+    key = f"check_{r}"
+    if key not in st.session_state:
+        st.session_state[key] = True
+
+# Cabeçalho
+st.sidebar.markdown("""
+<div class="sb-header">
+    <div class="sb-eyebrow">Painel de Controle</div>
+    <div class="sb-title">Rubricas de <span>Auditoria</span></div>
+</div>
+<div class="sb-tutorial">
+    <div class="sb-tutorial-title">Como usar</div>
+    <div class="sb-tutorial-text">
+        Selecione as rubricas que deseja auditar. Cada rubrica representa um tipo de cobrança identificada no extrato do INSS. O sistema identificará automaticamente os valores cobrados.
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Botões Marcar / Desmarcar — aplicam imediatamente o estado individual
+col_b1, col_b2 = st.sidebar.columns(2)
+
+if col_b1.button("✦ Marcar Todas", key="btn_marcar"):
+    for r in RUBRICAS_MESTRE.keys():
+        st.session_state[f"check_{r}"] = True
+
+if col_b2.button("✕ Desmarcar", key="btn_desmarcar"):
+    for r in RUBRICAS_MESTRE.keys():
+        st.session_state[f"check_{r}"] = False
+
+# Lista de checkboxes — cada um com seu estado individual no session_state
+selecionadas = []
+for r in RUBRICAS_MESTRE.keys():
+    key = f"check_{r}"
+    marcado = st.sidebar.checkbox(r, value=st.session_state[key], key=key)
+    if marcado:
+        selecionadas.append(r)
+
+# Contador de selecionadas
+st.sidebar.markdown('<hr class="sidebar-divider">', unsafe_allow_html=True)
+total_r   = len(RUBRICAS_MESTRE)
+sel_count = len(selecionadas)
+if sel_count == total_r:
+    cor_count  = "#C5A566"
+    status_txt = f"◆ &nbsp; Todas as {total_r} ativas"
+elif sel_count == 0:
+    cor_count  = "rgba(197,165,102,0.28)"
+    status_txt = f"◇ &nbsp; Nenhuma selecionada"
+else:
+    cor_count  = "rgba(197,165,102,0.7)"
+    status_txt = f"◈ &nbsp; {sel_count} de {total_r} ativas"
+st.sidebar.markdown(
+    f'<div class="rubrica-count" style="color:{cor_count};">{status_txt}</div>',
+    unsafe_allow_html=True
+)
+
+# Divisor de seção
+st.markdown("""
+<div class="em-divider">
+    <div class="em-divider-line"></div>
+    <div class="em-divider-pill">
+        <span class="em-divider-label">Análise de Extrato</span>
+    </div>
+    <div class="em-divider-line"></div>
+</div>
+
+<div class="upload-tutorial">
+    <div class="upload-step">
+        <div class="upload-step-n">1</div>
+        <div class="upload-step-t">Selecione as rubricas na barra lateral</div>
+    </div>
+    <div class="upload-step-arrow">→</div>
+    <div class="upload-step">
+        <div class="upload-step-n">2</div>
+        <div class="upload-step-t">Faça upload do extrato PDF</div>
+    </div>
+    <div class="upload-step-arrow">→</div>
+    <div class="upload-step">
+        <div class="upload-step-n">3</div>
+        <div class="upload-step-t">Baixe as planilhas de cálculo geradas</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+upload = st.file_uploader(
+    "Arraste o extrato bancário em PDF ou clique para selecionar",
+    type=["pdf"],
+    help="Suporta extratos do INSS (Histórico de Créditos) em PDF. Múltiplas páginas aceitas."
+)
+
+if not upload:
+    # ── SEÇÃO "COMO FUNCIONA" — preenche o espaço quando não há PDF ──────────
+    st.markdown("""
+<div style="margin-top: 52px;">
+<div class="em-divider">
+    <div class="em-divider-line"></div>
+    <div class="em-divider-pill">
+        <span class="em-divider-label">Como Funciona</span>
+    </div>
+    <div class="em-divider-line"></div>
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+    h1, h2, h3 = st.columns(3)
+    with h1:
+        st.markdown("""
+<div class="how-card">
+    <div class="how-num">01</div>
+    <div class="how-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28" stroke="#C5A566" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+        </svg>
+    </div>
+    <div class="how-title">Faça o Upload</div>
+    <div class="how-desc">
+        Importe o extrato do INSS (Histórico de Créditos) em PDF diretamente
+        do seu computador. O sistema aceita extratos com múltiplas páginas e
+        múltiplas competências.
+    </div>
+    <div class="how-tip">✦ Suporta extratos de vários anos em um único PDF</div>
+</div>
+""", unsafe_allow_html=True)
+
+    with h2:
+        st.markdown("""
+<div class="how-card how-card--center">
+    <div class="how-num">02</div>
+    <div class="how-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28" stroke="#C5A566" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <line x1="11" y1="8" x2="11" y2="14"/>
+            <line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+    </div>
+    <div class="how-title">Análise Automática</div>
+    <div class="how-desc">
+        O motor de auditoria lê cada página, identifica a Competência
+        (Mês/Ano) e localiza as rubricas indevidas na tabela de descontos,
+        capturando o valor exato ao lado de cada uma.
+    </div>
+    <div class="how-tip">✦ Competência (MM/AAAA) lida com precisão de 100%</div>
+</div>
+""", unsafe_allow_html=True)
+
+    with h3:
+        st.markdown("""
+<div class="how-card">
+    <div class="how-num">03</div>
+    <div class="how-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28" stroke="#C5A566" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+    </div>
+    <div class="how-title">Baixe as Planilhas</div>
+    <div class="how-desc">
+        Gera planilhas Excel por rubrica com tabela mensal/anual e cálculo
+        do valor em dobro conforme Art. 42 do Código de Defesa do Consumidor.
+    </div>
+    <div class="how-tip">✦ Pronta para uso jurídico e peticionamento</div>
+</div>
+""", unsafe_allow_html=True)
+
+    # Seção de rubricas suportadas
+    st.markdown("""
+<div style="margin-top: 48px;">
+<div class="em-divider">
+    <div class="em-divider-line"></div>
+    <div class="em-divider-pill">
+        <span class="em-divider-label">Rubricas Monitoradas</span>
+    </div>
+    <div class="em-divider-line"></div>
+</div>
+<div class="em-section-note">
+    Selecione na barra lateral as cobranças que deseja auditar
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+    rubricas_info = [
+        ("Empréstimo sobre a RMC", "Desconto sobre a Reserva de Margem Consignável — verifique se há contratação expressa do titular do benefício"),
+    ]
+    r_cols = st.columns(3)
+    for i, (titulo, desc) in enumerate(rubricas_info):
+        with r_cols[i % 3]:
+            st.markdown(f"""
+<div class="rub-card">
+    <div class="rub-title">{titulo}</div>
+    <div class="rub-desc">{desc}</div>
+</div>
+""", unsafe_allow_html=True)
+
+    # CSS das novas seções
+    st.markdown("""
+<style>
+/* ── Como Funciona ──────────────────────────────────────────────────────── */
+.how-card {
+    background: linear-gradient(145deg, var(--p3, #111823) 0%, var(--p2, #0A0F18) 100%);
+    border: 1px solid rgba(197,165,102,0.1);
+    border-radius: 16px;
+    padding: 28px 24px;
+    height: 100%;
+    position: relative;
+    transition: all 0.35s cubic-bezier(.22,1,.36,1);
+}
+.how-card:hover {
+    border-color: rgba(197,165,102,0.28);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4), 0 0 20px rgba(197,165,102,0.06);
+}
+.how-card--center {
+    border-top: 2px solid rgba(197,165,102,0.4);
+}
+.how-num {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 3.5rem; font-weight: 300; line-height: 1;
+    color: rgba(197,165,102,0.1); margin-bottom: 14px;
+    letter-spacing: -1px;
+}
+.how-icon {
+    margin-bottom: 16px;
+    width: 48px; height: 48px;
+    background: rgba(197,165,102,0.06);
+    border: 1px solid rgba(197,165,102,0.14);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease;
+}
+.how-card:hover .how-icon {
+    background: rgba(197,165,102,0.12);
+    border-color: rgba(197,165,102,0.3);
+}
+.how-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.35rem; font-weight: 600; color: #EDE5D4;
+    margin-bottom: 12px; letter-spacing: 0.3px;
+}
+.how-desc {
+    font-size: 0.85rem; color: rgba(237,229,212,0.4);
+    line-height: 1.7; letter-spacing: 0.2px;
+    margin-bottom: 16px;
+}
+.how-tip {
+    font-size: 0.72rem; color: rgba(197,165,102,0.45);
+    letter-spacing: 0.3px; line-height: 1.5;
+    padding-top: 14px;
+    border-top: 1px solid rgba(197,165,102,0.08);
+}
+
+/* ── Rubricas info ──────────────────────────────────────────────────────── */
+.rub-card {
+    background: rgba(197,165,102,0.03);
+    border: 1px solid rgba(197,165,102,0.08);
+    border-radius: 12px;
+    padding: 20px 18px;
+    margin-bottom: 10px;
+    transition: all 0.25s ease;
+}
+.rub-card:hover {
+    background: rgba(197,165,102,0.06);
+    border-color: rgba(197,165,102,0.2);
+}
+.rub-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.05rem; font-weight: 600;
+    color: rgba(197,165,102,0.85); margin-bottom: 7px;
+}
+.rub-desc {
+    font-size: 0.8rem; color: rgba(237,229,212,0.32);
+    line-height: 1.6; letter-spacing: 0.2px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+if upload:
+    with st.spinner("Analisando extratos e gerando tabelas de cálculos..."):
+        dados = realizar_auditoria(upload, selecionadas)
+        if dados:
+            df = pd.DataFrame(dados)
+            df['V_NUM'] = (df['VALOR']
+                           .str.replace('.', '', regex=False)
+                           .str.replace(',', '.', regex=False)
+                           .astype(float))
+
+            df['DT_O'] = pd.to_datetime(
+                df['DATA'].apply(fix_date), format='%d/%m/%Y', errors='coerce'
+            )
+            df = df.sort_values('DT_O', ascending=True)
+
+            total_geral = df['V_NUM'].sum()
+            total_dobro = total_geral * 2
+            cats_unicas = df['CATEGORIA'].nunique()
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </div>
+                    <h4>Total Recuperável</h4>
+                    <h2>R$ {total_geral:,.2f}</h2>
+                    <div class="metric-card-sub">Soma de todos os débitos indevidos identificados</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            with c2:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </div>
+                    <h4>Lançamentos</h4>
+                    <h2>{len(df)}</h2>
+                    <div class="metric-card-sub">Registros de cobranças identificadas no extrato</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            with c3:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    </div>
+                    <h4>Categorias</h4>
+                    <h2>{cats_unicas}</h2>
+                    <div class="metric-card-sub">Tipos de rubrica distintas encontradas no período</div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+            st.markdown(f'''
+<div class="em-divider" style="margin-top:40px;">
+    <div class="em-divider-line"></div>
+    <div class="em-divider-pill">
+        <span class="em-divider-label">Planilhas de Cálculo</span>
+    </div>
+    <div class="em-divider-line"></div>
+</div>
+<div class="em-section-note">
+    Cada planilha inclui tabela mensal, total anual e valor em dobro (Art. 42 CDC) — prontas para uso jurídico
+</div>
+''', unsafe_allow_html=True)
+
+            # Garante que CATEGORIA não tem NaN e VALOR é conversível
+            df['CATEGORIA'] = df['CATEGORIA'].fillna('').astype(str).str.strip()
+            df['VALOR']     = df['VALOR'].fillna('0').astype(str).str.strip()
+            df['V_NUM']     = (df['VALOR']
+                               .str.replace('.', '', regex=False)
+                               .str.replace(',', '.', regex=False)
+                               .apply(lambda x: float(x) if x else 0.0))
+            df = df[df['CATEGORIA'] != '']
+
+            cats = sorted(df['CATEGORIA'].unique().tolist())
+            cols_dl = st.columns(2)
+            for idx_cat, cat in enumerate(cats):
+                cat = str(cat).strip()
+                if not cat or cat == 'nan':
+                    continue
+                df_cat    = df[df['CATEGORIA'] == cat].copy()
+                if df_cat.empty:
+                    continue
+                try:
+                    excel_file = gerar_excel_calculos(df_cat, cat)
+                except Exception as e:
+                    continue
+                total_cat    = float(df_cat['V_NUM'].sum())
+                nome_arquivo = re.sub(r'[^\w\-]', '_', cat)
+                with cols_dl[idx_cat % 2]:
+                    st.download_button(
+                        label=f"◆  {cat}  ·  R$ {total_cat:,.2f}",
+                        data=excel_file,
+                        file_name=f"Tabela_{nome_arquivo}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key=f"dl_{nome_arquivo}_{idx_cat}"
+                    )
+
+            st.markdown(f'''
+<div class="em-divider" style="margin-top:40px;">
+    <div class="em-divider-line"></div>
+    <div class="em-divider-pill">
+        <span class="em-divider-label">Lançamentos Identificados</span>
+        <span class="em-divider-num">— {len(df)} registros</span>
+    </div>
+    <div class="em-divider-line"></div>
+</div>
+<div class="em-section-note">
+    Ordenados cronologicamente · Somente débitos identificados · Competência (Mês/Ano) confirmada no topo de cada página do extrato
+</div>
+''', unsafe_allow_html=True)
+            st.dataframe(
+                df[['DATA', 'CATEGORIA', 'VALOR', 'HISTÓRICO']],
+                use_container_width=True
+            )
+        else:
+            st.info("Nenhum débito encontrado com as rubricas selecionadas.")
+
+st.markdown("""
+<div class="em-footer">
+    <div class="em-ornament">
+        <div class="em-ornament-line rev"></div>
+        <div class="em-ornament-diamond">◆</div>
+        <div class="em-ornament-line"></div>
+    </div>
+    <div class="em-footer-name">Edson Medeiros</div>
+    <div class="em-footer-contacts">
+        <span class="em-footer-contact">
+            <a href="https://wa.me/5592995087379" target="_blank">☎ (92) 99508-7379</a>
+        </span>
+        <span class="em-footer-contact" style="color:rgba(197,165,102,0.2);">|</span>
+        <span class="em-footer-contact">
+            <a href="mailto:edson.senabr@gmail.com">✉ edson.senabr@gmail.com</a>
+        </span>
+    </div>
+    <a class="em-whatsapp-btn"
+       href="https://wa.me/5592995087379?text=Olá%2C%20gostaria%20de%20agendar%20uma%20consulta%20com%20o%20Dr.%20Edson%20Medeiros."
+       target="_blank">
+        ◆ &nbsp; Agendar Consulta via WhatsApp
+    </a>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Selo de fundação fixo ───────────────────────────────────────────────────
+st.markdown("""
+<div class="em-founder-seal">
+    <div class="em-seal-line"></div>
+    <div class="em-seal-label">Fundado por</div>
+    <div class="em-seal-name">Edson Medeiros</div>
+    <div class="em-seal-sub">Consultorias &amp; Compliance &nbsp;·&nbsp; 2024</div>
+    <div class="em-seal-ornament">◆ &nbsp; ◆ &nbsp; ◆</div>
+</div>
+""", unsafe_allow_html=True)
