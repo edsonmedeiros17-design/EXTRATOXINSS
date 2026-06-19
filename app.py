@@ -827,20 +827,11 @@ if not st.session_state["autenticado"]:
         width:clamp(180px,26vw,340px);height:clamp(180px,26vw,340px);
         border-radius:50%;border:1px solid rgba(197,165,102,.06);pointer-events:none;
     }
-    .lp-brand{display:flex;align-items:center;gap:10px;}
-    .lp-mark{
-        width:clamp(28px,2.8vw,38px);height:clamp(28px,2.8vw,38px);
-        background:rgba(197,165,102,.1);border:1px solid rgba(197,165,102,.24);
-        border-radius:8px;display:flex;align-items:center;justify-content:center;
-        font-family:'Cormorant Garamond',serif;font-size:clamp(11px,1.1vw,15px);
-        font-weight:700;color:#C5A566;flex-shrink:0;
-    }
-    .lp-bname{font-size:clamp(7px,.65vw,10px);letter-spacing:3px;text-transform:uppercase;color:rgba(237,229,212,.25);font-weight:600;}
-    .lp-mid{flex:1;display:flex;flex-direction:column;justify-content:center;padding:clamp(16px,2.5vh,32px) 0;}
-    .lp-pname{
+    /* Wordmark "ExtratoX" no topo */
+    .lp-toplogo{
         font-family:'Cormorant Garamond',serif;
-        font-size:clamp(40px,5.8vw,80px);font-weight:600;line-height:.9;
-        color:#EDE5D4;margin-bottom:clamp(4px,.5vh,8px);
+        font-size:clamp(34px,4.6vw,62px);font-weight:600;line-height:1;
+        color:#EDE5D4;letter-spacing:.5px;
     }
     .lp-x{
         background:linear-gradient(110deg,#EDE5D4 10%,#C5A566 35%,#D4B87A 55%,#EDE5D4 75%);
@@ -849,28 +840,69 @@ if not st.session_state["autenticado"]:
         animation:lpsh 5s linear infinite;
     }
     @keyframes lpsh{0%{background-position:-600px 0}100%{background-position:600px 0}}
-    .lp-ptag{
+
+    /* Bloco central: mascote + diferenciais + tagline */
+    .lp-mid2{
+        flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        text-align:center;gap:clamp(14px,2.2vh,22px);padding:clamp(10px,2vh,18px) 0;
+    }
+
+    /* Mascote robô (ilustração original em traço dourado) */
+    .lp-robot{
+        width:clamp(108px,12vw,158px);height:clamp(108px,12vw,158px);
+        position:relative;animation:lprfloat 4.2s ease-in-out infinite;
+    }
+    .lp-robot::before{
+        content:'';position:absolute;inset:-22px;border-radius:50%;
+        background:radial-gradient(circle,rgba(197,165,102,.18) 0%,transparent 70%);
+    }
+    .lp-robot svg{width:100%;height:100%;position:relative;z-index:1;}
+    @keyframes lprfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+    /* Cartão "Nossos Diferenciais" */
+    .lp-diff{
+        width:100%;max-width:480px;
+        background:rgba(197,165,102,.045);border:1px solid rgba(197,165,102,.16);
+        border-radius:16px;padding:clamp(16px,2.2vh,22px) clamp(12px,1.8vw,20px);
+    }
+    .lp-diff-title{
+        font-family:'Cormorant Garamond',serif;font-size:clamp(15px,1.5vw,19px);
+        font-weight:600;color:#EDE5D4;margin-bottom:clamp(12px,1.8vh,18px);letter-spacing:.3px;
+    }
+    .lp-diff-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:clamp(4px,.8vw,10px);}
+    .lp-diff-item{display:flex;flex-direction:column;align-items:center;gap:6px;}
+    .lp-diff-icon{
+        width:30px;height:30px;border-radius:50%;flex-shrink:0;
+        border:1px solid rgba(197,165,102,.3);background:rgba(197,165,102,.08);
+        display:flex;align-items:center;justify-content:center;
+    }
+    .lp-diff-icon svg{width:14px;height:14px;}
+    .lp-diff-label{
+        font-size:clamp(7.5px,.62vw,9.5px);font-weight:600;line-height:1.4;
+        color:rgba(237,229,212,.5);letter-spacing:.1px;
+    }
+
+    /* Tagline de boas-vindas */
+    .lp-tagline{
         font-family:'Cormorant Garamond',serif;font-style:italic;
-        font-size:clamp(12px,1.2vw,17px);color:rgba(197,165,102,.42);
-        margin-bottom:clamp(14px,2vh,24px);letter-spacing:.5px;
+        font-size:clamp(13px,1.25vw,17px);color:rgba(197,165,102,.55);
+        line-height:1.6;letter-spacing:.3px;
     }
-    .lp-spd{
-        display:flex;align-items:center;gap:clamp(8px,1vw,14px);
-        padding:clamp(10px,1.2vh,14px) clamp(12px,1.4vw,18px);
-        background:rgba(197,165,102,.05);border:1px solid rgba(197,165,102,.14);
-        border-left:3px solid rgba(197,165,102,.6);border-radius:0 6px 6px 0;
-        margin-bottom:clamp(14px,2vh,24px);
+
+    /* Barra de estatísticas no rodapé da coluna esquerda */
+    .lp-footstats{
+        display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+        gap:clamp(9px,1.4vw,18px);padding-top:clamp(16px,2.4vh,24px);
+        border-top:1px solid rgba(197,165,102,.08);
     }
-    .lp-spdn{font-family:'Cormorant Garamond',serif;font-size:clamp(26px,3.5vw,48px);font-weight:600;color:#C5A566;line-height:1;flex-shrink:0;}
-    .lp-spdt{font-size:clamp(11px,.9vw,13px);font-weight:600;color:rgba(237,229,212,.55);}
-    .lp-spds{font-size:clamp(9px,.75vw,11px);color:rgba(237,229,212,.25);margin-top:3px;line-height:1.55;}
-    .lp-bens{display:flex;flex-direction:column;}
-    .lp-ben{display:flex;align-items:flex-start;gap:clamp(8px,1vw,14px);padding:clamp(9px,1.2vh,13px) 0;border-bottom:1px solid rgba(197,165,102,.07);}
-    .lp-ben:last-child{border-bottom:none;}
-    .lp-bnum{font-family:'Cormorant Garamond',serif;font-size:clamp(14px,1.4vw,19px);font-weight:300;color:rgba(197,165,102,.22);min-width:22px;line-height:1.3;flex-shrink:0;}
-    .lp-btt{font-size:clamp(11px,.9vw,13px);font-weight:600;color:rgba(237,229,212,.58);margin-bottom:2px;}
-    .lp-bdd{font-size:clamp(9px,.78vw,11px);color:rgba(237,229,212,.26);line-height:1.6;}
-    .lp-foot{font-size:clamp(8px,.65vw,10px);color:rgba(197,165,102,.2);letter-spacing:.8px;line-height:1.9;}
+    .lp-fstat{
+        display:flex;align-items:center;gap:6px;
+        font-size:clamp(7.5px,.6vw,9.5px);font-weight:600;letter-spacing:1.8px;
+        text-transform:uppercase;color:rgba(197,165,102,.4);white-space:nowrap;
+    }
+    .lp-fstat-sep{width:1px;height:9px;background:rgba(197,165,102,.15);flex-shrink:0;}
+    .lp-fstat-dot{width:5px;height:5px;border-radius:50%;background:#4CAF50;animation:lppd 2.5s ease-in-out infinite;flex-shrink:0;}
+    @keyframes lppd{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(1.25)}}
 
     /* COLUNA DIREITA */
     .lp-R{
@@ -879,43 +911,62 @@ if not st.session_state["autenticado"]:
         display:flex;flex-direction:column;justify-content:space-between;
         min-height:100vh;
     }
-    .lp-rlogo{font-family:'Cormorant Garamond',serif;font-size:clamp(26px,3.5vw,52px);font-weight:600;color:#EDE5D4;line-height:1;margin-bottom:4px;}
-    .lp-rsub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(11px,1vw,14px);color:rgba(197,165,102,.32);margin-bottom:clamp(18px,2.8vh,32px);letter-spacing:.8px;}
-    .lp-orn{display:flex;align-items:center;gap:10px;margin-bottom:clamp(14px,2.2vh,24px);}
-    .lp-ornl{flex:1;height:1px;background:rgba(197,165,102,.1);}
-    .lp-ornd{font-size:7px;color:rgba(197,165,102,.24);}
+    /* Cartão de acesso */
+    .lp-rcard{
+        background:linear-gradient(160deg,rgba(197,165,102,.055) 0%,rgba(255,255,255,.012) 100%);
+        border:1px solid rgba(197,165,102,.16);border-radius:18px;
+        padding:clamp(22px,3.2vh,32px) clamp(20px,2.6vw,30px);
+    }
+    .lp-rtitle{
+        font-family:'Cormorant Garamond',serif;font-weight:600;line-height:1.3;
+        font-size:clamp(21px,2.5vw,29px);color:#EDE5D4;margin-bottom:clamp(16px,2.6vh,26px);
+    }
+    .lp-rtitle .accent{
+        display:block;font-size:clamp(13px,1.3vw,17px);font-weight:500;
+        color:rgba(197,165,102,.55);margin-top:2px;
+    }
 
-    /* Inputs nativos do Streamlit estilizados */
+    /* Inputs nativos do Streamlit estilizados — fundo claro, com ícone */
     [data-testid="stForm"] label{
         font-family:'Inter',sans-serif!important;font-size:clamp(8px,.65vw,10px)!important;
         font-weight:600!important;letter-spacing:3px!important;text-transform:uppercase!important;
-        color:rgba(197,165,102,.36)!important;
+        color:rgba(197,165,102,.5)!important;
     }
     [data-testid="stForm"] label span{display:none!important;}
     [data-testid="stForm"] input{
-        background:rgba(197,165,102,.04)!important;border:1px solid rgba(197,165,102,.15)!important;
-        border-radius:8px!important;color:#EDE5D4!important;
+        background:#EDE5D4!important;border:1px solid rgba(197,165,102,.3)!important;
+        border-radius:8px!important;color:#241B0E!important;
         font-family:'Inter',sans-serif!important;
-        font-size:clamp(13px,1.1vw,16px)!important;font-weight:300!important;
-        padding:clamp(10px,1.3vh,14px) 16px!important;
-        caret-color:#C5A566!important;outline:none!important;box-shadow:none!important;transition:all .25s!important;
+        font-size:clamp(13px,1.1vw,16px)!important;font-weight:400!important;
+        padding:clamp(10px,1.3vh,14px) 16px clamp(10px,1.3vh,14px) 42px!important;
+        caret-color:#A8883E!important;outline:none!important;box-shadow:none!important;transition:all .25s!important;
+        background-repeat:no-repeat!important;background-position:14px center!important;background-size:16px!important;
+    }
+    [data-testid="stForm"] input::placeholder{color:rgba(36,27,14,.4)!important;}
+    div[data-testid="stTextInput"]:nth-of-type(1) input{
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A8883E' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z'/%3E%3Cpolyline points='22,6 12,13 2,6'/%3E%3C/svg%3E") !important;
+    }
+    div[data-testid="stTextInput"]:nth-of-type(2) input{
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A8883E' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='10' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") !important;
     }
     [data-testid="stForm"] input:focus{
-        border-color:rgba(197,165,102,.5)!important;background:rgba(197,165,102,.07)!important;
-        box-shadow:0 0 0 3px rgba(197,165,102,.06)!important;
+        border-color:#C5A566!important;background-color:#F4EEE0!important;
+        box-shadow:0 0 0 3px rgba(197,165,102,.18)!important;
     }
     [data-testid="stFormSubmitButton"]>button{
-        width:100%!important;background:rgba(197,165,102,.11)!important;
-        border:1px solid rgba(197,165,102,.4)!important;border-radius:8px!important;
-        color:#C5A566!important;font-family:'Inter',sans-serif!important;
-        font-size:clamp(9px,.75vw,11px)!important;font-weight:700!important;
-        letter-spacing:3.5px!important;text-transform:uppercase!important;
-        padding:clamp(11px,1.5vh,16px)!important;margin-top:clamp(8px,1.2vh,14px)!important;
+        width:100%!important;
+        background:linear-gradient(135deg,#D4B87A 0%,#C5A566 55%,#A8883E 100%)!important;
+        border:none!important;border-radius:8px!important;
+        color:#1C140A!important;font-family:'Inter',sans-serif!important;
+        font-size:clamp(9.5px,.8vw,12px)!important;font-weight:700!important;
+        letter-spacing:2.5px!important;text-transform:uppercase!important;
+        padding:clamp(12px,1.6vh,17px)!important;margin-top:clamp(8px,1.2vh,14px)!important;
+        box-shadow:0 8px 24px rgba(197,165,102,.22)!important;
         transition:all .3s!important;
     }
     [data-testid="stFormSubmitButton"]>button:hover{
-        background:rgba(197,165,102,.2)!important;border-color:#C5A566!important;
-        transform:translateY(-2px)!important;
+        filter:brightness(1.08)!important;transform:translateY(-2px)!important;
+        box-shadow:0 12px 30px rgba(197,165,102,.32)!important;
     }
     [data-testid="stAlert"]{
         background:rgba(180,60,60,.05)!important;border:1px solid rgba(180,60,60,.2)!important;
@@ -923,39 +974,112 @@ if not st.session_state["autenticado"]:
     }
     [data-testid="stAlert"] svg{display:none!important;}
 
-    /* Grid stats + why */
-    .lp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(197,165,102,.09);border-radius:10px;overflow:hidden;margin-top:clamp(14px,2vh,22px);}
-    .lp-gs{background:#04060C;padding:clamp(10px,1.4vh,16px) clamp(10px,1.2vw,16px);}
-    .lp-gsn{font-family:'Cormorant Garamond',serif;font-size:clamp(16px,1.8vw,26px);font-weight:600;color:#C5A566;line-height:1;}
-    .lp-gsl{font-size:clamp(7px,.58vw,9px);font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(237,229,212,.18);margin-top:4px;}
-    .lp-why{margin-top:clamp(10px,1.5vh,16px);padding-top:clamp(10px,1.4vh,14px);border-top:1px solid rgba(197,165,102,.07);}
-    .lp-wlbl{font-size:clamp(7px,.6vw,9px);font-weight:600;letter-spacing:3px;text-transform:uppercase;color:rgba(197,165,102,.22);margin-bottom:10px;}
-    .lp-wrow{display:flex;}
-    .lp-wi{flex:1;padding:0 10px;border-right:1px solid rgba(197,165,102,.07);text-align:center;}
-    .lp-wi:first-child{padding-left:0;text-align:left;}
-    .lp-wi:last-child{border-right:none;}
-    .lp-win{font-family:'Cormorant Garamond',serif;font-size:clamp(13px,1.3vw,18px);font-weight:600;color:#C5A566;line-height:1;}
-    .lp-wil{font-size:clamp(7px,.6vw,9px);color:rgba(237,229,212,.18);margin-top:3px;line-height:1.4;}
-    .lp-status{display:flex;align-items:center;gap:6px;margin-top:clamp(10px,1.4vh,14px);font-size:clamp(7px,.6vw,9px);color:rgba(197,165,102,.18);letter-spacing:1.5px;text-transform:uppercase;}
-    .lp-sdot{width:5px;height:5px;border-radius:50%;background:#4CAF50;animation:lppd 2.5s ease-in-out infinite;}
-    @keyframes lppd{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
+    /* Linha "Esqueci a Senha" / "Criar Conta" */
+    .lp-linksrow{
+        display:flex;align-items:center;justify-content:space-between;
+        margin-top:clamp(12px,1.8vh,18px);
+    }
+    .lp-link{
+        font-family:'Inter',sans-serif;font-size:clamp(10px,.85vw,12px);
+        color:rgba(197,165,102,.6);text-decoration:none;letter-spacing:.2px;
+        border-bottom:1px solid transparent;transition:all .2s ease;
+    }
+    .lp-link:hover{color:#C5A566;border-bottom-color:rgba(197,165,102,.45);}
 
-    /* Selo */
-    .lp-seal{position:fixed;bottom:28px;right:22px;display:flex;flex-direction:column;align-items:flex-end;gap:2px;opacity:.5;z-index:10;pointer-events:none;}
-    .lp-seal-line{width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(197,165,102,.5));margin-bottom:4px;}
-    .lp-seal-lbl{font-size:7px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:rgba(197,165,102,.28);text-align:right;}
-    .lp-seal-name{font-family:'Great Vibes',cursive;font-size:18px;color:rgba(197,165,102,.5);line-height:1;text-align:right;}
-    .lp-seal-sub{font-size:6px;letter-spacing:2px;text-transform:uppercase;color:rgba(197,165,102,.18);text-align:right;margin-top:1px;}
+    /* Divisor entre o cartão e a linha de estatísticas */
+    .lp-divider2{height:1px;background:rgba(197,165,102,.1);margin:clamp(18px,2.6vh,26px) 0;}
+
+    /* Linha de estatísticas / status do sistema */
+    .lp-statsrow2{
+        display:flex;align-items:center;justify-content:space-between;
+        gap:clamp(8px,1.2vw,16px);flex-wrap:wrap;
+    }
+    .lp-stat2{display:flex;align-items:center;gap:8px;}
+    .lp-stat2-icon{
+        width:26px;height:26px;border-radius:7px;flex-shrink:0;
+        background:rgba(197,165,102,.08);border:1px solid rgba(197,165,102,.2);
+        display:flex;align-items:center;justify-content:center;
+    }
+    .lp-stat2-icon svg{width:13px;height:13px;}
+    .lp-stat2-txt{
+        font-size:clamp(7.5px,.6vw,9.5px);font-weight:600;line-height:1.4;
+        color:rgba(237,229,212,.45);letter-spacing:.2px;text-transform:uppercase;
+    }
+    .lp-online{display:flex;align-items:center;gap:6px;}
+    .lp-online-dot{
+        width:7px;height:7px;border-radius:50%;background:#4CAF50;
+        box-shadow:0 0 8px #4CAF50;animation:lppd 2s ease-in-out infinite;
+    }
+    .lp-online-txt{
+        font-size:clamp(8.5px,.68vw,10.5px);font-weight:700;letter-spacing:1.6px;
+        color:#7FD992;text-transform:uppercase;
+    }
+
+    /* Selo "Master Programmer" — fixo, canto inferior direito */
+    .lp-seal2{
+        position:fixed;bottom:24px;right:22px;z-index:10;pointer-events:none;
+        display:flex;flex-direction:column;align-items:flex-end;gap:2px;opacity:.7;
+    }
+    .lp-seal2-top{display:flex;align-items:center;gap:7px;margin-bottom:2px;}
+    .lp-seal2-mark{
+        width:21px;height:21px;border-radius:50%;flex-shrink:0;
+        border:1px solid rgba(197,165,102,.45);display:flex;align-items:center;justify-content:center;
+        font-family:'Cormorant Garamond',serif;font-size:9px;font-weight:700;color:#C5A566;
+    }
+    .lp-seal2-label{font-size:7.5px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:rgba(197,165,102,.6);text-align:right;line-height:1.4;}
+    .lp-seal2-sub{font-size:6px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:rgba(197,165,102,.28);text-align:right;}
+    .lp-seal2-divider{width:78px;height:1px;background:linear-gradient(90deg,transparent,rgba(197,165,102,.4));margin:5px 0 4px;}
+    .lp-seal2-foundedby{font-size:6px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(197,165,102,.24);text-align:right;}
+    .lp-seal2-name{font-family:'Great Vibes',cursive;font-size:17px;color:rgba(197,165,102,.6);line-height:1.1;text-align:right;}
+    .lp-seal2-copy{font-size:6px;letter-spacing:.8px;color:rgba(197,165,102,.2);text-align:right;margin-top:2px;}
 
     /* Mobile */
     @media(max-width:768px){
         .lp-wrap{grid-template-columns:1fr;}
         .lp-L{min-height:auto;border-right:none;border-bottom:1px solid rgba(197,165,102,.1);}
         .lp-R{min-height:auto;}
-        .lp-seal{display:none;}
+        .lp-seal2{display:none;}
+        .lp-diff-grid{grid-template-columns:repeat(3,1fr);row-gap:14px;}
+        .lp-footstats{justify-content:flex-start;}
+        .lp-statsrow2{justify-content:flex-start;gap:18px;}
     }
     </style>
     """, unsafe_allow_html=True)
+
+    # ── ÍCONES SVG (traço dourado, estilo consistente com o resto do app) ────
+    ICON_SEARCH = '<svg viewBox="0 0 24 24" stroke="#C5A566" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16" y2="16"/></svg>'
+    ICON_SHIELD = '<svg viewBox="0 0 24 24" stroke="#C5A566" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><polyline points="8.5 12 11 14.5 16 9"/></svg>'
+    ICON_TABLE = '<svg viewBox="0 0 24 24" stroke="#C5A566" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="20"/></svg>'
+    ICON_TIMER  = '<svg viewBox="0 0 24 24" stroke="#C5A566" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><line x1="12" y1="13" x2="12" y2="9"/><line x1="9" y1="2" x2="15" y2="2"/></svg>'
+    ICON_BOLT   = '<svg viewBox="0 0 24 24" stroke="#C5A566" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 4 14 11 14 10 22 20 10 13 10 13 2"/></svg>'
+    ICON_CHART  = '<svg viewBox="0 0 24 24" stroke="#C5A566" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="13"/><line x1="12" y1="21" x2="12" y2="8"/><line x1="19" y1="21" x2="19" y2="3"/></svg>'
+    ICON_CHECK2 = '<svg viewBox="0 0 24 24" stroke="#C5A566" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9"/></svg>'
+    ICON_AI     = '<svg viewBox="0 0 24 24" stroke="#C5A566" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><path d="M7 7l8 1.5L15.5 17 7 15.5z"/></svg>'
+
+    # Mascote ExtratoX — ilustração original em traço dourado (robô auditor),
+    # criada especialmente para esta tela (não é cópia de imagem de terceiros).
+    ROBOT_SVG = '''
+    <svg viewBox="0 0 100 122" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="50" cy="116" rx="26" ry="4" fill="rgba(197,165,102,0.15)"/>
+        <line x1="50" y1="4" x2="50" y2="15" stroke="#C5A566" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="50" cy="4" r="3.2" fill="#C5A566"/>
+        <rect x="29" y="15" width="42" height="33" rx="12" fill="rgba(197,165,102,0.06)" stroke="#C5A566" stroke-width="2"/>
+        <circle cx="41" cy="32" r="4" fill="#C5A566"/>
+        <circle cx="59" cy="32" r="4" fill="#C5A566"/>
+        <path d="M41 41 Q50 46 59 41" stroke="#C5A566" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <rect x="44" y="46" width="12" height="8" fill="rgba(197,165,102,0.06)" stroke="#C5A566" stroke-width="2"/>
+        <rect x="20" y="52" width="60" height="48" rx="16" fill="rgba(197,165,102,0.06)" stroke="#C5A566" stroke-width="2"/>
+        <rect x="36" y="64" width="28" height="20" rx="4" fill="rgba(197,165,102,0.1)" stroke="#C5A566" stroke-width="1.6"/>
+        <line x1="42" y1="79" x2="42" y2="71" stroke="#C5A566" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="50" y1="79" x2="50" y2="68" stroke="#C5A566" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="58" y1="79" x2="58" y2="73" stroke="#C5A566" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M20 60 Q6 70 11 88" stroke="#C5A566" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M80 60 Q94 70 90 86" stroke="#C5A566" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <rect x="84" y="83" width="13" height="10" rx="2" fill="rgba(197,165,102,0.1)" stroke="#C5A566" stroke-width="1.6"/>
+        <rect x="32" y="98" width="13" height="17" rx="5" fill="rgba(197,165,102,0.06)" stroke="#C5A566" stroke-width="2"/>
+        <rect x="55" y="98" width="13" height="17" rx="5" fill="rgba(197,165,102,0.06)" stroke="#C5A566" stroke-width="2"/>
+    </svg>
+    '''
 
     # ── LAYOUT ──────────────────────────────────────────────────────────────
     col_L, col_R = st.columns([1.1, 1.0])
@@ -963,34 +1087,65 @@ if not st.session_state["autenticado"]:
     with col_L:
         st.markdown('<div class="lp-wrap" style="display:contents">', unsafe_allow_html=True)
         st.markdown('<div class="lp-L">', unsafe_allow_html=True)
-        st.markdown('<div class="lp-brand"><div class="lp-mark">EM</div><div class="lp-bname">Edson Medeiros · Consultorias</div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-mid">', unsafe_allow_html=True)
-        st.markdown('<div class="lp-pname">Extrato<span class="lp-x">X</span></div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-ptag">O rob&ocirc; que audita seu extrato em 10 segundos.</div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-spd"><div class="lp-spdn">10s</div><div><div class="lp-spdt">An&aacute;lise completa do extrato</div><div class="lp-spds">Do upload ao relat&oacute;rio pronto &mdash; sem esfor&ccedil;o manual</div></div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-bens">', unsafe_allow_html=True)
-        for num, t, d in [
-            ("01","Precis&atilde;o de 100%","Leitura posicional por coluna X &mdash; distingue d&eacute;bito de cr&eacute;dito sem falhas"),
-            ("02","19 rubricas monitoradas","CESTA, MORA, ANUIDADE, ENCARGOS, PARCELA, SEGURO e mais &mdash; detectadas automaticamente"),
-            ("03","Relat&oacute;rio jur&iacute;dico pronto","Planilha com Art. 42 CDC em dobro, pronta para peticionamento instantaneamente"),
+
+        st.markdown('<div class="lp-toplogo">Extrato<span class="lp-x">X</span></div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="lp-mid2">', unsafe_allow_html=True)
+        st.markdown(f'<div class="lp-robot">{ROBOT_SVG}</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="lp-diff">', unsafe_allow_html=True)
+        st.markdown('<div class="lp-diff-title">Nossos Diferenciais</div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-diff-grid">', unsafe_allow_html=True)
+        for icon_svg, label in [
+            (ICON_SEARCH, "Análise Instantânea"),
+            (ICON_SHIELD, "100% Precisão em Descontos Indevidos"),
+            (ICON_TABLE,  "Tabela Automática e Relatório Completo"),
+            (ICON_TIMER,  "Em apenas 10 Segundos"),
+            (ICON_BOLT,   "Esforço Manual Zero"),
         ]:
-            st.markdown(f'<div class="lp-ben"><div class="lp-bnum">{num}</div><div><div class="lp-btt">{t}</div><div class="lp-bdd">{d}</div></div></div>', unsafe_allow_html=True)
-        st.markdown('</div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-foot">(92) 99508-7379 &nbsp;&middot;&nbsp; edson.senabr@gmail.com</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="lp-diff-item"><div class="lp-diff-icon">{icon_svg}</div>'
+                f'<div class="lp-diff-label">{label}</div></div>',
+                unsafe_allow_html=True
+            )
+        st.markdown('</div>', unsafe_allow_html=True)   # fecha lp-diff-grid
+        st.markdown('</div>', unsafe_allow_html=True)   # fecha lp-diff
+
+        st.markdown(
+            '<div class="lp-tagline">Bem-vindo ao ExtratoX.<br>Sua ferramenta de auditoria bancária de elite.</div>',
+            unsafe_allow_html=True
+        )
+        st.markdown('</div>', unsafe_allow_html=True)   # fecha lp-mid2
+
+        st.markdown('''
+        <div class="lp-footstats">
+            <div class="lp-fstat">10S ANÁLISE</div>
+            <div class="lp-fstat-sep"></div>
+            <div class="lp-fstat">19 RUBRICAS</div>
+            <div class="lp-fstat-sep"></div>
+            <div class="lp-fstat">ART.42 CDC AUTO</div>
+            <div class="lp-fstat-sep"></div>
+            <div class="lp-fstat"><div class="lp-fstat-dot"></div>SISTEMA ONLINE</div>
+            <div class="lp-fstat-sep"></div>
+            <div class="lp-fstat">VERSÃO 2.0</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)   # fecha lp-L
 
     with col_R:
         st.markdown('<div class="lp-R">', unsafe_allow_html=True)
-        st.markdown('<div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-rlogo">Extrato<span class="lp-x">X</span></div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-rsub">Acesse o portal de auditoria</div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-orn"><div class="lp-ornl"></div><div class="lp-ornd">&#9670;</div><div class="lp-ornl"></div></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="lp-rcard">', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="lp-rtitle">Área de Acesso Seguro<span class="accent">- Portal de Auditoria</span></div>',
+            unsafe_allow_html=True
+        )
 
         with st.form("login_form", clear_on_submit=False):
             _email = st.text_input("E-mail", placeholder="seu@email.com", key="login_email")
             _senha = st.text_input("Senha", placeholder="••••••••••", type="password", key="login_senha")
-            _submitted = st.form_submit_button("◆  Acessar o ExtratoX")
+            _submitted = st.form_submit_button("Acessar ExtratoX  →")
 
         if _submitted:
             if _check_login(_email, _senha):
@@ -999,12 +1154,42 @@ if not st.session_state["autenticado"]:
             else:
                 st.error("Credenciais inválidas — verifique e-mail e senha")
 
-        st.markdown('<div class="lp-grid"><div class="lp-gs"><div class="lp-gsn">10s</div><div class="lp-gsl">An&aacute;lise</div></div><div class="lp-gs"><div class="lp-gsn">19</div><div class="lp-gsl">Rubricas</div></div><div class="lp-gs"><div class="lp-gsn">Art.42</div><div class="lp-gsl">CDC auto</div></div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-why"><div class="lp-wlbl">Por que usar</div><div class="lp-wrow"><div class="lp-wi"><div class="lp-win">100%</div><div class="lp-wil">Precis&atilde;o</div></div><div class="lp-wi"><div class="lp-win">0</div><div class="lp-wil">Esfor&ccedil;o manual</div></div><div class="lp-wi"><div class="lp-win">CDC</div><div class="lp-wil">Art. 42 auto</div></div></div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="lp-status"><div class="lp-sdot"></div>Sistema online &nbsp;&middot;&nbsp; Vers&atilde;o 2.0</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('''
+        <div class="lp-linksrow">
+            <a class="lp-link" href="mailto:edson.senabr@gmail.com?subject=Recupera%C3%A7%C3%A3o%20de%20senha%20-%20ExtratoX" target="_blank">Esqueci a Senha</a>
+            <a class="lp-link" href="https://wa.me/5592995087379?text=Ol%C3%A1%2C%20gostaria%20de%20criar%20uma%20conta%20no%20ExtratoX." target="_blank">Criar Conta</a>
+        </div>
+        ''', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)   # fecha lp-rcard
 
-    st.markdown('<div class="lp-seal"><div class="lp-seal-line"></div><div class="lp-seal-lbl">Fundado por</div><div class="lp-seal-name">Edson Medeiros</div><div class="lp-seal-sub">Consultorias &amp; Compliance &middot; 2024</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="lp-divider2"></div>', unsafe_allow_html=True)
+
+        st.markdown(f'''
+        <div class="lp-statsrow2">
+            <div class="lp-stat2"><div class="lp-stat2-icon">{ICON_CHART}</div><div class="lp-stat2-txt">Milhões<br>Analisados</div></div>
+            <div class="lp-stat2"><div class="lp-stat2-icon">{ICON_CHECK2}</div><div class="lp-stat2-txt">Centenas de Auditorias<br>Concluídas</div></div>
+            <div class="lp-stat2"><div class="lp-stat2-icon">{ICON_AI}</div><div class="lp-stat2-txt">Powered by<br>ExtratoX AI</div></div>
+            <div class="lp-online"><div class="lp-online-dot"></div><div class="lp-online-txt">Online</div></div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)   # fecha lp-R
+
+    st.markdown('''
+    <div class="lp-seal2">
+        <div class="lp-seal2-top">
+            <div class="lp-seal2-mark">EM</div>
+            <div>
+                <div class="lp-seal2-label">Master Programmer</div>
+                <div class="lp-seal2-sub">Edição Limitada</div>
+            </div>
+        </div>
+        <div class="lp-seal2-divider"></div>
+        <div class="lp-seal2-foundedby">Fundado por</div>
+        <div class="lp-seal2-name">Edson Medeiros</div>
+        <div class="lp-seal2-copy">© 2024 EDSON MEDEIROS · CONSULTORIAS</div>
+    </div>
+    ''', unsafe_allow_html=True)
 
     st.stop()
 
