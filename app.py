@@ -1145,25 +1145,33 @@ def realizar_auditoria(arquivo, rubricas_alvo):
     """
     Motor de auditoria para extratos do INSS (Histórico de Créditos).
 
-    Para cada página do PDF:
+    Para todo o PDF (não só por página):
       1. Varre as linhas em busca da Competência (MM/AAAA) — é o dado de
          data mais importante e deve ser lido com precisão de 100%.
       2. A Competência encontrada vale para todos os lançamentos de rubrica
-         identificados a partir daquele ponto na página, até que uma nova
-         Competência apareça (extratos podem ter mais de uma competência
-         por página em alguns layouts; o motor sempre usa a Competência
-         mais recente já vista).
+         identificados a partir daquele ponto, até que uma nova Competência
+         apareça.
       3. Para cada linha de rubrica reconhecida (RUBRICAS_MESTRE), captura
          o valor na própria linha (à direita da descrição).
+
+    IMPORTANTE — a Competência PERSISTE entre páginas (não é reiniciada a
+    cada nova página do PDF). Isso é necessário porque o extrato do INSS
+    pode cortar a tabela "Rubrica / Descrição Rubrica / Valor" no fim de
+    uma página quando ela não cabe inteira: a linha da Competência aparece
+    no fim da página 1 (ex: "05/2024 ...") mas sua tabela de rubricas vem
+    vazia ali, e as rubricas daquela mesma Competência aparecem "soltas",
+    sem nenhuma nova linha de Competência antes delas, logo no topo da
+    página 2. Se a Competência fosse reiniciada por página, essas rubricas
+    do topo da página seriam descartadas por falta de data confiável — e é
+    exatamente isso que deve ser evitado.
     """
     resultados = []
+    competencia_atual = None   # persiste entre páginas, propositalmente
 
     with pdfplumber.open(arquivo) as pdf:
         for page in pdf.pages:
             texto_pagina = page.extract_text() or ""
             linhas_pagina = texto_pagina.split("\n")
-
-            competencia_atual = None
 
             for linha in linhas_pagina:
                 texto_up = linha.upper().strip()
@@ -1194,10 +1202,10 @@ def realizar_auditoria(arquivo, rubricas_alvo):
                 if not valor_final:
                     continue
 
-                # Sem Competência identificada ainda nesta página: não é
-                # possível selar a data deste lançamento com confiança —
-                # melhor descartar do que arriscar uma data errada em um
-                # relatório de uso jurídico.
+                # Sem Competência identificada ainda em nenhuma página
+                # anterior (ou na atual): não é possível selar a data deste
+                # lançamento com confiança — melhor descartar do que
+                # arriscar uma data errada em um relatório de uso jurídico.
                 if not competencia_atual:
                     continue
 
